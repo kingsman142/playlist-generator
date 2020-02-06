@@ -19,9 +19,7 @@ TODO:
 1) Add memory so we can store banned songs long term
 */
 
-var books = [];
-var booksID = [];
-var folders = [];
+var bookmarkIds = [];
 var removeScrollbars = true;
 var availableSongs = [];
 var bannedSongs = new Set();
@@ -30,9 +28,9 @@ var currentVideoID = null;
 var current = 0;
 var end = 0;
 
-// Main function to run the program
+// main function to run the program
 function startPlaylist(bookmarksId){
-    booksID = bookmarksId;
+    bookmarkIds = bookmarksId;
     chrome.windows.create({
         url: "https://www.youtube.com/watch?v=" + fetchRandomSong(),
         type: 'popup',
@@ -126,18 +124,18 @@ function fetchRandomSong(){
     var rand = Math.floor(Math.random() * availableSongs.length);
     var newSongIndex = availableSongs[rand];
     availableSongs.splice(rand, 1);
-    console.log("Chose song at index: " + newSongIndex + ", ID: " + booksID[newSongIndex] + ", available songs: " + availableSongs.length);
-    return booksID[newSongIndex];
+    console.log("Chose song at index: " + newSongIndex + ", ID: " + bookmarkIds[newSongIndex] + ", available songs: " + availableSongs.length);
+    return bookmarkIds[newSongIndex];
 }
 
 function removeBannedSongs(){
-    var goodSongs = booksID.filter(x => !bannedSongs.has(x));
-    booksID = Array.from(goodSongs);
+    var goodSongs = bookmarkIds.filter(x => !bannedSongs.has(x));
+    bookmarkIds = Array.from(goodSongs);
 }
 
 function populateAvailableSongs(){
     removeBannedSongs();
-    for(var i = 0; i < booksID.length; i++){
+    for(var i = 0; i < bookmarkIds.length; i++){
         availableSongs.push(i);
     }
 }

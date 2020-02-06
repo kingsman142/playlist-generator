@@ -16,36 +16,35 @@ Future ideas:
 *) Machine. Learning. ;)
 */
 
-var booksID = [];
-var folders = [];
+var bookmarkIds = [];
+var folderNamesList = [];
 var backgroundPage = chrome.extension.getBackgroundPage()
 
-// Main function to run the program
+// main function to run the program
 function getBookmarks(){
-    chrome.bookmarks.getTree(function(bookmarks){
-        var input = window.document.getElementById("foldersForm").value;
-        parseFolders(input);
+    chrome.bookmarks.getTree(function(bookmarks){ // iterate over the bookmarks on the bookmarks bar
+        var folderNamesString = window.document.getElementById("foldersForm").value;
+        parseFolders(folderNamesString);
 
-        for(var j = 0; j < folders.length; j++){
+        for(var j = 0; j < folderNamesList.length; j++){
             bookmarks.forEach(function(folder){
-                searchForBookmarks(folder, folders[j]); // Collect all bookmarks in the "Music" folder and put them into the booksID array
+                searchForBookmarks(folder, folderNamesList[j]); // collect all bookmarks in the "Music" folder and put them into the bookmarkIds array
             })
         }
 
-        backgroundPage.console.log("=== Total # of bookmarks: " + booksID.length + " ===");
+        backgroundPage.console.log("===== Total # of bookmarks: " + bookmarkIds.length + " =====");
 
         var bgPage = backgroundPage;
-        bgPage.startPlaylist(booksID);
+        bgPage.startPlaylist(bookmarkIds);
     });
 }
 
-// Traverses entire list of bookmarks to find all the folders containing music (specified by user)
-// and then adds every Youtube bookmark to the booksID array
+// traverses entire list of bookmarks to find all the folders containing music (specified by user) and then adds every Youtube bookmark to the bookmarkIds array
 function searchForBookmarks(folder, title){
-    folder.children.forEach(function(child){ // Loop through all bookmarks
-        if(child.title == title){ // If the item title matches the title of the folder we're looking for ("Music"), proceed
-            collectBookmarks(child); // Loop through all the bookmarks in the folder that we found
-        } else if(child.children){ // If the item is a folder, it has children
+    folder.children.forEach(function(child){ // loop through all bookmarks
+        if(child.title == title){ // if the item title matches the title of the folder we're looking for ("Music"), proceed
+            collectBookmarks(child); // loop through all the bookmarks in the folder that we found
+        } else if(child.children){ // if the item is a folder, it has children
             searchForBookmarks(child, title);
         }
     })
@@ -54,18 +53,18 @@ function collectBookmarks(folder){
     folder.children.forEach(function(child){
         if(child.url){
           if(findWord("youtube.com", child.url)){
-              var videoID = findVideoID(child.url); // Find the video ID of the video and add it to the bookmarks ID array
-              if(videoID != null) booksID.push(videoID); // Find the video ID of the video and add it to the bookmarks ID array
+              var videoID = findVideoID(child.url); // find the video ID of the video and add it to the bookmarks ID array
+              if(videoID != null) bookmarkIds.push(videoID); // find the video ID of the video and add it to the bookmarks ID array
           }
         } else{ // it's a folder
             collectBookmarks(child)
         }
     })
 
-    backgroundPage.console.log("-----Folder: " + folder.id + " contains " + folder.children.length + " songs-----");
+    backgroundPage.console.log("=== Folder: " + folder.id + " contains " + folder.children.length + " songs ===");
 }
 
-// Takes a Youtube url and returns the video ID.
+// takes a Youtube url and returns the video ID.
 function findVideoID(url){
     var videoIDIdentifier = "v=";
     var index = url.indexOf(videoIDIdentifier); // search for the index of "v="
@@ -75,19 +74,17 @@ function findVideoID(url){
     return videoID;
 }
 
-// Main purpose is to take a url and try to find
-// the word "youtube" in it to make sure it's a youtube video
+// main purpose is to take a url and try to find the word "youtube" in it to make sure it's a youtube video
 function findWord(word, url){
     var regex = new RegExp(word, "g");
     return regex.test(url);
 }
 
-// Take the input of the folders from the HTML form
-// and parse every folder name, which is separated
-// by a comma.
+// take the input of the folders from the HTML form and parse every folder name, which is separated by a comma.
 function parseFolders(names){
-    folders = names.split(",");
-    backgroundPage.console.log(folders);
+    folderNamesList = names.split(","); // transform "Music, Music 2, Music 3" to ["Music", " Music 2", " Music 3"]
+    folderNamesList = folderNamesList.map(folderName => folderName.trim()); // transform ["Music", " Music 2", " Music 3"] to ["Music", "Music 2", "Music 3"]
+    backgroundPage.console.log(folderNamesList);
 }
 
 // calls the main program into action once the window loads and the user clicks the "Make playlist!" button
