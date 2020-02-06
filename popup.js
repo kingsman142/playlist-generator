@@ -83,7 +83,7 @@ function findWord(word, url){
 // take the input of the folders from the HTML form and parse every folder name, which is separated by a comma.
 function parseFolders(names){
     folderNamesList = names.split(","); // transform "Music, Music 2, Music 3" to ["Music", " Music 2", " Music 3"]
-    folderNamesList = folderNamesList.map(folderName => folderName.trim()); // transform ["Music", " Music 2", " Music 3"] to ["Music", "Music 2", "Music 3"]
+    folderNamesList = folderNamesList.map(folderName => folderName.trim()); // trim leading/trailing whitespace i.e. transform ["Music", " Music 2", " Music 3"] to ["Music", "Music 2", "Music 3"]
     backgroundPage.console.log(folderNamesList);
 }
 
@@ -93,8 +93,8 @@ window.onload = function(){
 
     const foldersForm = window.document.getElementById("foldersForm")
     foldersForm.addEventListener('keydown', function(keyPressEvent){
-        // https://stackoverflow.com/questions/302122/jquery-event-keypress-which-key-was-pressed claims e.keyCode and e.which are deprecated for e.key
-        if(keyPressEvent.which === 13) getBookmarks() // user hit the 'Enter' key
+        pressedKeyCode = keyPressEvent.which || keyPressEvent.keyCode; // both are deprecated, but .code doesn't work in Chrome v79.0.3945.117
+        if(pressedKeyCode === 13) getBookmarks(); // user hit the 'Enter' key
     })
     foldersForm.focus(); // ensures the foldersForm element is the one that's activated when the 'Enter' key is hit; also always the user to type immediately without clicking in the input field
 }
