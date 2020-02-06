@@ -36,7 +36,7 @@ function startPlaylist(bookmarksId){
     chrome.windows.create({
         url: "https://www.youtube.com/watch?v=" + fetchRandomSong(),
         type: 'popup',
-        width: 465,
+        width: 485,
         height: 475,
     }, function(window){
       chrome.tabs.query({

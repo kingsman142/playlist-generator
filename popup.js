@@ -18,6 +18,7 @@ Future ideas:
 
 var booksID = [];
 var folders = [];
+var backgroundPage = chrome.extension.getBackgroundPage()
 
 // Main function to run the program
 function getBookmarks(){
@@ -31,9 +32,9 @@ function getBookmarks(){
             })
         }
 
-        console.log("=== Total # of bookmarks: " + booksID.length + " ===");
+        backgroundPage.console.log("=== Total # of bookmarks: " + booksID.length + " ===");
 
-        var bgPage = chrome.extension.getBackgroundPage();
+        var bgPage = backgroundPage;
         bgPage.startPlaylist(booksID);
     });
 }
@@ -61,7 +62,7 @@ function collectBookmarks(folder){
         }
     })
 
-    console.log("-----Folder: " + folder.id + " contains " + folder.children.length + " songs-----");
+    backgroundPage.console.log("-----Folder: " + folder.id + " contains " + folder.children.length + " songs-----");
 }
 
 // Takes a Youtube url and returns the video ID.
@@ -86,7 +87,7 @@ function findWord(word, url){
 // by a comma.
 function parseFolders(names){
     folders = names.split(",");
-    chrome.extension.getBackgroundPage().console.log(folders);
+    backgroundPage.console.log(folders);
 }
 
 // calls the main program into action once the window loads and the user clicks the "Make playlist!" button
