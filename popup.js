@@ -18,12 +18,6 @@ Future ideas:
 
 var booksID = [];
 var folders = [];
-var bannedSongs = []; // Songs that are unavailable in that country or are dead links
-
-function fetchRandomSong(){
-    var rand = Math.floor(Math.random() * booksID.length);
-    return booksID[rand];
-}
 
 // Main function to run the program
 function getBookmarks(){
@@ -31,59 +25,43 @@ function getBookmarks(){
         var input = window.document.getElementById("foldersForm").value;
         parseFolders(input);
 
-        chrome.windows.create({
-            url: "https://www.youtube.com/watch?v=" + fetchRandomSong(),
-            type: 'popup',
-            width: 465,
-            height: 475,
-        }, function(window){
-            chrome.tabs.query({
-                windowId: window.id
-            }, function(tabs){
-                newURL = "https://www.youtube.com/watch?v=" + fetchRandomSong();
-                chrome.tabs.update(tabs[0].id, {
-                    url: newURL
-                }, function(){
-                    var bgPage = chrome.extension.getBackgroundPage();
-                    bgPage.startPlaylist(booksID, tabs);
-                });
-            });
-        });
-
         for(var j = 0; j < folders.length; j++){
-            searchForTitle(bookmarks, folders[j], null); // Collect all bookmarks in the "Music" folder and put them into the booksID array
+            bookmarks.forEach(function(folder){
+                searchForBookmarks(folder, folders[j]); // Collect all bookmarks in the "Music" folder and put them into the booksID array
+            })
         }
 
-        console.log("===Total # of bookmarks: " + booksID.length + "===");
+        console.log("=== Total # of bookmarks: " + booksID.length + " ===");
+
+        var bgPage = chrome.extension.getBackgroundPage();
+        bgPage.startPlaylist(booksID);
     });
 }
 
 // Traverses entire list of bookmarks to find all the folders containing music (specified by user)
 // and then adds every Youtube bookmark to the booksID array
-function searchForTitle(bookmarks, title, parent){
-    if(parent == null){ // First find the parent folder
-        for(var i = 0; i < bookmarks.length; i++){ // Loop through all bookmarks
-            if(bookmarks[i].title == title){ // If the item title matches the title of the folder we're looking for ("Music"), proceed
-                searchForTitle(bookmarks[i].children, null, bookmarks[i].id); // Loop through all the bookmarks in the folder that we found
-                return null;
-            } else{
-                if(bookmarks[i].children){ // If the item is a folder, it has children
-                    searchForTitle(bookmarks[i].children, title, parent);
-                }
-            }
+function searchForBookmarks(folder, title){
+    folder.children.forEach(function(child){ // Loop through all bookmarks
+        if(child.title == title){ // If the item title matches the title of the folder we're looking for ("Music"), proceed
+            collectBookmarks(child); // Loop through all the bookmarks in the folder that we found
+        } else if(child.children){ // If the item is a folder, it has children
+            searchForBookmarks(child, title);
         }
-    } else if(title == null){ // Parent folder is found, now just traverse the bookmarks within
-
-        for(var i = 0; i < bookmarks.length; i++){
-            if(findWord("youtube.com", bookmarks[i].url)){
-                var videoID = findVideoID(bookmarks[i].url); // Find the video ID of the video and add it to the bookmarks ID array
-                if(videoID != null) booksID.push(videoID); // Find the video ID of the video and add it to the bookmarks ID array
-            }
+    })
+}
+function collectBookmarks(folder){
+    folder.children.forEach(function(child){
+        if(child.url){
+          if(findWord("youtube.com", child.url)){
+              var videoID = findVideoID(child.url); // Find the video ID of the video and add it to the bookmarks ID array
+              if(videoID != null) booksID.push(videoID); // Find the video ID of the video and add it to the bookmarks ID array
+          }
+        } else{ // it's a folder
+            collectBookmarks(child)
         }
+    })
 
-        console.log("-----Folder: " + parent + " contains " + bookmarks.length + " songs-----");
-        return null;
-    }
+    console.log("-----Folder: " + folder.id + " contains " + folder.children.length + " songs-----");
 }
 
 // Takes a Youtube url and returns the video ID.
@@ -108,11 +86,17 @@ function findWord(word, url){
 // by a comma.
 function parseFolders(names){
     folders = names.split(",");
-    console.log(folders);
+    chrome.extension.getBackgroundPage().console.log(folders);
 }
 
-//Calls the main program into action once the window loads and the user
-//clicks the "Make playlist!" button
+// calls the main program into action once the window loads and the user clicks the "Make playlist!" button
 window.onload = function(){
     window.document.getElementById("bookmarksButton").addEventListener('click', getBookmarks, true);
+
+    const foldersForm = window.document.getElementById("foldersForm")
+    foldersForm.addEventListener('keydown', function(keyPressEvent){
+        // https://stackoverflow.com/questions/302122/jquery-event-keypress-which-key-was-pressed claims e.keyCode and e.which are deprecated for e.key
+        if(keyPressEvent.which === 13) getBookmarks() // user hit the 'Enter' key
+    })
+    foldersForm.focus(); // ensures the foldersForm element is the one that's activated when the 'Enter' key is hit; also always the user to type immediately without clicking in the input field
 }

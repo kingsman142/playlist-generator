@@ -14,6 +14,9 @@ Future ideas:
 3) Add storage to the extension so banned songs are transferred from each session
 4) Separate out songs by types/genres and mood for the user
 *) Machine. Learning. ;)
+
+TODO:
+1) Add memory so we can store banned songs long term
 */
 
 var books = [];
@@ -28,9 +31,22 @@ var current = 0;
 var end = 0;
 
 // Main function to run the program
-function startPlaylist(bookmarksId, tabs){
+function startPlaylist(bookmarksId){
     booksID = bookmarksId;
-    recursePlaylistExec(tabs);
+    chrome.windows.create({
+        url: "https://www.youtube.com/watch?v=" + fetchRandomSong(),
+        type: 'popup',
+        width: 465,
+        height: 475,
+    }, function(window){
+      chrome.tabs.query({
+          windowId: window.id
+      }, function(tabs){
+        setTimeout(function() {
+          recursePlaylistExec(tabs);
+      }, 2000)
+      })
+    })
 }
 
 function recursePlaylistExec(tabs){
@@ -47,7 +63,7 @@ function recursePlaylistExec(tabs){
         code: "var current = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuenow'); var end = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuemax'); var availability = document.getElementsByClassName('reason').length; [current, end, availability]"
     },  function(results){
             if(chrome.runtime.lastError) return;
-            
+
             try{
                 current = results[0][0]; // current time in the player
                 end = results[0][1]; // end time of the player
@@ -102,14 +118,15 @@ function recursePlaylistExec(tabs){
 }
 
 function fetchRandomSong(){
-    var rand = Math.floor(Math.random() * availableSongs.length);
-    var newSongIndex = availableSongs[rand];
-    availableSongs.splice(rand, 1);
-    console.log("Chose song at index: " + newSongIndex + ", ID: " + booksID[newSongIndex] + ", available songs: " + availableSongs.length);
     if(availableSongs.length <= 2){
         populateAvailableSongs();
         console.log("Resetting list of songs!");
     }
+
+    var rand = Math.floor(Math.random() * availableSongs.length);
+    var newSongIndex = availableSongs[rand];
+    availableSongs.splice(rand, 1);
+    console.log("Chose song at index: " + newSongIndex + ", ID: " + booksID[newSongIndex] + ", available songs: " + availableSongs.length);
     return booksID[newSongIndex];
 }
 

@@ -3,13 +3,6 @@
     <link rel="stylesheet" type="text/css" href="style.css">
     <head>
         <title>Playlist generator</title>
-        <!--
-          - JavaScript and HTML must be in separate files: see our Content Security
-          - Policy documentation[1] for details and explanation.
-          -
-          - [1]: https://developer.chrome.com/extensions/contentSecurityPolicy
-        -->
-        <script src="https://apis.google.com/js/client.js?onload=handleClientLoad" type="text/javascript"></script>
         <script src="popup.js" type="text/javascript"></script>
     </head>
     <body>
@@ -26,7 +19,7 @@
         <div id="title">Playlist Generator</div>
         <div id="description">
             1. Find your Youtube music bookmarks<br/>
-            2. Enter the name of their respective folders<br/>
+            2. Enter the name of their respective folders (comma-separated)<br/>
             3. Click the button below to start listening!<br/>
         </div>
         <div>
