@@ -7,13 +7,6 @@ so, my solution was to make my own playlist so I can enjoy literally hundreds of
 This program utilizes JavaScript to create a chrome extension, accessing a user's
 bookmarks on the current computer. These bookmarks are then stored, and the Google Chrome API
 is used to execute scripts on a new chrome tab, which loops through the bookmarks.
-
-Future ideas:
-1) Hook up to Spotify API
-2) Fix the scrollbars so they are removed faster
-3) Add storage to the extension so banned songs are transferred from each session
-4) Separate out songs by types/genres and mood for the user
-*) Machine. Learning. ;)
 */
 
 var bookmarkIds = [];
