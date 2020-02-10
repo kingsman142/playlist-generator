@@ -1,16 +1,9 @@
 /*
 James Hahn, 2016
-
-I gained inspiration for this project from a problem of mine that I recognized:
-I had too many Youtube bookmarks of my favorite songs, yet no way to play them all efficiently;
-so, my solution was to make my own playlist so I can enjoy literally hundreds of hours of music (turns out I had ~1860 bookmarks, wow).
-This program utilizes JavaScript to create a chrome extension, accessing a user's
-bookmarks on the current computer. These bookmarks are then stored, and the Google Chrome API
-is used to execute scripts on a new chrome tab, which loops through the bookmarks.
 */
 
-var bookmarkIds = [];
-var folderNamesList = [];
+var bookmarkIds = []; // YouTube video IDs of each bookmark
+var folderNamesList = []; //
 var backgroundPage = chrome.extension.getBackgroundPage()
 
 // main function to run the program
@@ -28,7 +21,7 @@ function getBookmarks(){
         backgroundPage.console.log("===== Total # of bookmarks: " + bookmarkIds.length + " =====");
 
         var bgPage = backgroundPage;
-        bgPage.startPlaylist(bookmarkIds);
+        bgPage.startPlaylist(bookmarkIds); // must move the main functionality of the program to background.js so the program does not stop after the popup is closed
     });
 }
 
@@ -39,16 +32,16 @@ function searchForBookmarks(folder, title){
             collectBookmarks(child); // loop through all the bookmarks in the folder that we found
         } else if(child.children){ // if the item is a folder, it has children
             searchForBookmarks(child, title);
-        }
+        } // else, this is a regular bookmark that does not belong to the folder(s) we are looking for
     })
 }
 function collectBookmarks(folder){
     folder.children.forEach(function(child){
         if(child.url){
-          if(findWord("youtube.com", child.url)){
-              var videoID = findVideoID(child.url); // find the video ID of the video and add it to the bookmarks ID array
-              if(videoID != null) bookmarkIds.push(videoID); // find the video ID of the video and add it to the bookmarks ID array
-          }
+            if(child.url.includes("youtube.com")){ // make sure this is a youtube link
+                var videoID = findVideoID(child.url); // find the video ID of the video and add it to the bookmarks ID array
+                if(videoID != null) bookmarkIds.push(videoID); // find the video ID of the video and add it to the bookmarks ID array
+            }
         } else{ // it's a folder
             collectBookmarks(child)
         }
@@ -57,20 +50,11 @@ function collectBookmarks(folder){
     backgroundPage.console.log("=== Folder: " + folder.id + " contains " + folder.children.length + " songs ===");
 }
 
-// takes a Youtube url and returns the video ID.
+// takes a Youtube url and returns the video ID (e.g. transforms "https://www.youtube.com/watch?v=XTNPtzq9lxA&feature=youtu.be&t=2" to "XTNPtzq9lxA")
 function findVideoID(url){
-    var videoIDIdentifier = "v=";
-    var index = url.indexOf(videoIDIdentifier); // search for the index of "v="
-    if(index == -1) return null;
-    var idBeginIndex = index + videoIDIdentifier.length; // this the index that the video ID begins in the URL
-    var videoID = url.substring(idBeginIndex); // get the video ID
-    return videoID;
-}
-
-// main purpose is to take a url and try to find the word "youtube" in it to make sure it's a youtube video
-function findWord(word, url){
-    var regex = new RegExp(word, "g");
-    return regex.test(url);
+    url = new URL(url);
+    var urlParams = new URLSearchParams(url.search);
+    return urlParams.has('v') ? urlParams.get('v') : null
 }
 
 // take the input of the folders from the HTML form and parse every folder name, which is separated by a comma.
