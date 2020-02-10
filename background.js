@@ -62,7 +62,7 @@ function recursePlaylistExec(tabId){
                         bannedSongs.add(currentVideoId);
                     }
 
-                    navigateToNewSong(tabId);
+                    return navigateToNewSong(tabId);
                 } else{ // just call this function recursively so we can update the current time variable
                     setTimeout(function(){
                         return recursePlaylistExec(tabId);
@@ -70,7 +70,7 @@ function recursePlaylistExec(tabId){
                 }
             } catch(e){ // an exception occurred
                 console.log(e);
-                navigateToNewSong(tabId);
+                return navigateToNewSong(tabId);
             }
         }
     );
