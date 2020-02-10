@@ -3,8 +3,8 @@ James Hahn, 2016
 */
 
 var bookmarkIds = []; // YouTube video IDs of each bookmark
-var folderNamesList = []; //
-var backgroundPage = chrome.extension.getBackgroundPage()
+var folderNamesList = []; // names of folders where we should search for YouTube bookmarks
+var backgroundPage = chrome.extension.getBackgroundPage() // keep an active instance of the background page for easy logging
 
 // main function to run the program
 function getBookmarks(){
