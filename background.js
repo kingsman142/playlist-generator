@@ -2,6 +2,10 @@
 James Hahn, 2016
 */
 
+const TIMEOUT_LENGTH = 2000; // wait at least TIMEOUT_LENGTH milliseconds before navigating to a new URL
+const WINDOW_WIDTH = 485;
+const WINDOW_HEIGHT = 475;
+
 var bookmarkIds = []; // YouTube video IDs of each bookmark
 var removeScrollbars = true; // should we remove scrollbars once the window is generated?
 var availableSongs = []; // list of songs current available in the queue; play every song once, then refill the queue
@@ -17,22 +21,22 @@ function startPlaylist(bookmarksId){
     chrome.windows.create({
         url: "https://www.youtube.com/watch?v=" + getRandomSongId(),
         type: 'popup',
-        width: 485,
-        height: 475,
+        width: WINDOW_WIDTH,
+        height: WINDOW_HEIGHT,
     }, function(window){
       chrome.tabs.query({
           windowId: window.id
       }, function(tabs){
         setTimeout(function() {
-          recursePlaylistExec(tabs);
-      }, 2000)
+          recursePlaylistExec(tabs[0].id); // pass in the ID of the Google Chrome tab created by this window
+      }, TIMEOUT_LENGTH)
       })
     })
 }
 
-function recursePlaylistExec(tabs){
+function recursePlaylistExec(tabId){
     if(removeScrollbars){
-        chrome.tabs.executeScript(tabs[0].id, {
+        chrome.tabs.executeScript(tabId, {
             code: "document.getElementsByTagName('html')[0].style.overflow = 'hidden';"
         }, function(){
             console.log("Removing scrollbars");
@@ -40,7 +44,7 @@ function recursePlaylistExec(tabs){
         });
     }
 
-    chrome.tabs.executeScript(tabs[0].id, {
+    chrome.tabs.executeScript(tabId, {
         code:  `var currentTime = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuenow');
                 var endTime = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuemax');
                 var availability = document.getElementsByClassName('reason').length;
@@ -58,52 +62,38 @@ function recursePlaylistExec(tabs){
                         bannedSongs.add(currentVideoId);
                     }
 
-                    // reset variables for next iteration
-                    currentTime = 0;
-                    endTime = 0;
-                    currentVideoId = getRandomSongId();
-                    newURL = "https://www.youtube.com/watch?v=" + getRandomSongId();
-
-                    // load the url of the next video
-                    chrome.tabs.update(tabs[0].id, {
-                        url: newURL
-                    }, function(){
-                        setTimeout(function(){ // navigate to the new song
-                            currentTime = 0;
-                            endTime = 0;
-                            removeScrollbars = true;
-                            recursePlaylistExec(tabs);
-                        }, 2000); // wait at least 2000 sounds before executing this code because we don't want to just refresh instantly
-                    });
-                } else{
+                    navigateToNewSong(tabId);
+                } else{ // just call this function recursively so we can update the current time variable
                     setTimeout(function(){
-                        recursePlaylistExec(tabs);
-                    }, 2000);
+                        return recursePlaylistExec(tabId);
+                    }, TIMEOUT_LENGTH);
                 }
-            } catch(e){
+            } catch(e){ // an exception occurred
                 console.log(e);
-
-                // reset variables for next iteration
-                currentTime = 0;
-                endTime = 0;
-                currentVideoId = getRandomSongId();
-                newURL = "https://www.youtube.com/watch?v=" + currentVideoId;
-
-                chrome.tabs.update(tabs[0].id, {
-                    url: newURL
-                }, function(){
-                    setTimeout(
-                        function(){
-                            currentTime = 0;
-                            endTime = 0;
-                            removeScrollbars = true;
-                            recursePlaylistExec(tabs);
-                        },
-                    2000);
-                });
+                navigateToNewSong(tabId);
             }
         }
     );
+}
+
+function navigateToNewSong(tabId){
+    // reset variables for next iteration
+    currentTime = 0;
+    endTime = 0;
+    currentVideoId = getRandomSongId();
+    newURL = "https://www.youtube.com/watch?v=" + getRandomSongId();
+
+    // load the url of the next video
+    chrome.tabs.update(tabId, {
+        url: newURL
+    }, function(){
+        setTimeout(function(){ // navigate to the new song
+            currentTime = 0;
+            endTime = 0;
+            removeScrollbars = true;
+            return recursePlaylistExec(tabId);
+        }, TIMEOUT_LENGTH); // wait at least TIMEOUT_LENGTH milliseconds before executing this code because we don't want to just refresh instantly
+    });
 }
 
 function getRandomSongId(){
