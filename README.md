@@ -14,6 +14,7 @@ TODO (important)
 * Port extension to Firefox
 * Provide support for non-YouTube links (e.g. Vimeo, DailyMotion)
 * Create an interface to allow users to skip a song, go back to the previous song, or un-bookmark a song
+* Add functionality to store, remove, and modify previous playlists
 
 TODO (nice to have)
 * Hook up to Spotify API
