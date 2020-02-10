@@ -6,8 +6,8 @@ var bookmarkIds = []; // YouTube video IDs of each bookmark
 var folderNamesList = []; // names of folders where we should search for YouTube bookmarks
 var backgroundPage = chrome.extension.getBackgroundPage() // keep an active instance of the background page for easy logging
 
-// main function to run the program
-function getBookmarks(){
+// main function to run the program -- find the YouTube video Ids of the bookmarks in the folders specified by the user
+function getBookmarkIds(){
     chrome.bookmarks.getTree(function(bookmarks){ // iterate over the bookmarks on the bookmarks bar
         var folderNamesString = window.document.getElementById("foldersForm").value;
         parseFolders(folderNamesString);
@@ -66,12 +66,12 @@ function parseFolders(names){
 
 // calls the main program into action once the window loads and the user clicks the "Make playlist!" button
 window.onload = function(){
-    window.document.getElementById("bookmarksButton").addEventListener('click', getBookmarks, true);
+    window.document.getElementById("bookmarksButton").addEventListener('click', getBookmarkIds, true);
 
     const foldersForm = window.document.getElementById("foldersForm")
     foldersForm.addEventListener('keydown', function(keyPressEvent){
         pressedKeyCode = keyPressEvent.which || keyPressEvent.keyCode; // both are deprecated, but .code doesn't work in Chrome v79.0.3945.117
-        if(pressedKeyCode === 13) getBookmarks(); // user hit the 'Enter' key
+        if(pressedKeyCode === 13) getBookmarkIds(); // user hit the 'Enter' key
     })
     foldersForm.focus(); // ensures the foldersForm element is the one that's activated when the 'Enter' key is hit; also always the user to type immediately without clicking in the input field
 }
