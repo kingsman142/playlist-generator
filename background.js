@@ -1,28 +1,21 @@
 /*
 James Hahn, 2016
-
-I gained inspiration for this project from a problem of mine that I recognized:
-I had too many Youtube bookmarks of my favorite songs, yet no way to play them all efficiently;
-so, my solution was to make my own playlist so I can enjoy literally hundreds of hours of music (turns out I had ~1860 bookmarks, wow).
-This program utilizes JavaScript to create a chrome extension, accessing a user's
-bookmarks on the current computer. These bookmarks are then stored, and Google Chrome API
-is used to execute scripts on a new chrome tab, which loops through the bookmarks.
 */
 
-var bookmarkIds = [];
-var removeScrollbars = true;
-var availableSongs = [];
+var bookmarkIds = []; // YouTube video IDs of each bookmark
+var removeScrollbars = true; // should we remove scrollbars once the window is generated?
+var availableSongs = []; // list of songs current available in the queue; play every song once, then refill the queue
 var bannedSongs = new Set();
-var currentVideoID = null;
+var currentVideoId = null; // video ID of the video currently playing in the window
 
-var current = 0;
-var end = 0;
+var currentTime = 0; // current number of seconds we have played in the video
+var endTime = 0; // total number of seconds there are in the video
 
 // main function to run the program
 function startPlaylist(bookmarksId){
     bookmarkIds = bookmarksId;
     chrome.windows.create({
-        url: "https://www.youtube.com/watch?v=" + fetchRandomSong(),
+        url: "https://www.youtube.com/watch?v=" + getRandomSongId(),
         type: 'popup',
         width: 485,
         height: 475,
@@ -42,40 +35,45 @@ function recursePlaylistExec(tabs){
         chrome.tabs.executeScript(tabs[0].id, {
             code: "document.getElementsByTagName('html')[0].style.overflow = 'hidden';"
         }, function(){
-            console.log("removing scrollbars");
+            console.log("Removing scrollbars");
             removeScrollbars = false;
         });
     }
 
     chrome.tabs.executeScript(tabs[0].id, {
-        code: "var current = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuenow'); var end = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuemax'); var availability = document.getElementsByClassName('reason').length; [current, end, availability]"
+        code:  `var currentTime = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuenow');
+                var endTime = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuemax');
+                var availability = document.getElementsByClassName('reason').length;
+                [currentTime, endTime, availability]`
     },  function(results){
             if(chrome.runtime.lastError) return;
 
             try{
-                current = results[0][0]; // current time in the player
-                end = results[0][1]; // end time of the player
+                currentTime = results[0][0]; // current time in the player
+                endTime = results[0][1]; // end time of the player
                 availability = results[0][2]; // check if the player has any HTML reasons with "reasons" why a video is unavailable
 
-                if((current == end && end != 0) || availability >= 1){ // marks the end of the song OR the video is unavailable
-                    if(availability.length >= 1 && currentVideoID != null){
-                        bannedSongs.add(currentVideoID);
-                        currentVideoID = null;
+                if((currentTime == endTime && endTime != 0) || availability >= 1){ // marks the end of the song OR the video is unavailable
+                    if(availability.length >= 1 && currentVideoId != null){
+                        bannedSongs.add(currentVideoId);
                     }
 
-                    current = 0;
-                    end = 0;
-                    currentVideoID = fetchRandomSong();
-                    newURL = "https://www.youtube.com/watch?v=" + currentVideoID;
+                    // reset variables for next iteration
+                    currentTime = 0;
+                    endTime = 0;
+                    currentVideoId = getRandomSongId();
+                    newURL = "https://www.youtube.com/watch?v=" + getRandomSongId();
+
+                    // load the url of the next video
                     chrome.tabs.update(tabs[0].id, {
                         url: newURL
                     }, function(){
                         setTimeout(function(){ // navigate to the new song
-                            current = 0;
-                            end = 0;
+                            currentTime = 0;
+                            endTime = 0;
                             removeScrollbars = true;
                             recursePlaylistExec(tabs);
-                        }, 2000); // wait at least 1000 sounds before executing this code because we don't want to just refresh instantly
+                        }, 2000); // wait at least 2000 sounds before executing this code because we don't want to just refresh instantly
                     });
                 } else{
                     setTimeout(function(){
@@ -83,18 +81,21 @@ function recursePlaylistExec(tabs){
                     }, 2000);
                 }
             } catch(e){
-                current = 0;
-                end = 0;
                 console.log(e);
-                currentVideoID = fetchRandomSong();
-                newURL = "https://www.youtube.com/watch?v=" + currentVideoID;
+
+                // reset variables for next iteration
+                currentTime = 0;
+                endTime = 0;
+                currentVideoId = getRandomSongId();
+                newURL = "https://www.youtube.com/watch?v=" + currentVideoId;
+
                 chrome.tabs.update(tabs[0].id, {
                     url: newURL
                 }, function(){
                     setTimeout(
                         function(){
-                            current = 0;
-                            end = 0;
+                            currentTime = 0;
+                            endTime = 0;
                             removeScrollbars = true;
                             recursePlaylistExec(tabs);
                         },
@@ -105,7 +106,7 @@ function recursePlaylistExec(tabs){
     );
 }
 
-function fetchRandomSong(){
+function getRandomSongId(){
     if(availableSongs.length <= 2){
         populateAvailableSongs();
         console.log("Resetting list of songs!");
