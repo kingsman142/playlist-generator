@@ -18,20 +18,31 @@ var endTime = 0; // total number of seconds there are in the video
 // main function to run the program
 function startPlaylist(bookmarksId){
     bookmarkIds = bookmarksId;
-    chrome.windows.create({
-        url: "https://www.youtube.com/watch?v=" + getRandomSongId(),
-        type: 'popup',
-        width: WINDOW_WIDTH,
-        height: WINDOW_HEIGHT,
-    }, function(window){
-      chrome.tabs.query({
-          windowId: window.id
-      }, function(tabs){
-        setTimeout(function() {
-          recursePlaylistExec(tabs[0].id); // pass in the ID of the Google Chrome tab created by this window
-      }, TIMEOUT_LENGTH)
-      })
-    })
+
+    chrome.storage.sync.get(['bannedSongs'],
+        function(returnDict){
+            console.log("Grabbed banned songs list");
+            bannedSongs = new Set(returnDict.bannedSongs);
+            console.log(bannedSongs);
+            console.log(" ");
+
+            currentVideoId = getRandomSongId()
+            chrome.windows.create({
+                url: "https://www.youtube.com/watch?v=" + currentVideoId,
+                type: 'popup',
+                width: WINDOW_WIDTH,
+                height: WINDOW_HEIGHT,
+            }, function(window){
+              chrome.tabs.query({
+                  windowId: window.id
+              }, function(tabs){
+                setTimeout(function() {
+                  recursePlaylistExec(tabs[0].id); // pass in the ID of the Google Chrome tab created by this window
+              }, TIMEOUT_LENGTH)
+              })
+            })
+        }
+    )
 }
 
 function recursePlaylistExec(tabId){
@@ -58,8 +69,12 @@ function recursePlaylistExec(tabId){
                 availability = results[0][2]; // check if the player has any HTML reasons with "reasons" why a video is unavailable
 
                 if((currentTime == endTime && endTime != 0) || availability >= 1){ // marks the end of the song OR the video is unavailable
-                    if(availability.length >= 1 && currentVideoId != null){
+                    if(availability >= 1){
                         bannedSongs.add(currentVideoId);
+                        console.log("Banning song " + currentVideoId)
+                        console.log(bannedSongs)
+                        console.log(" ")
+                        chrome.storage.sync.set({"bannedSongs": Array.from(bannedSongs)}, function(){ console.log("Updated banned songs list"); })
                     }
 
                     return navigateToNewSong(tabId);
@@ -81,7 +96,7 @@ function navigateToNewSong(tabId){
     currentTime = 0;
     endTime = 0;
     currentVideoId = getRandomSongId();
-    newURL = "https://www.youtube.com/watch?v=" + getRandomSongId();
+    newURL = "https://www.youtube.com/watch?v=" + currentVideoId;
 
     // load the url of the next video
     chrome.tabs.update(tabId, {
@@ -97,7 +112,7 @@ function navigateToNewSong(tabId){
 }
 
 function getRandomSongId(){
-    if(availableSongs.length <= 2){
+    if(availableSongs.length == 0){
         populateAvailableSongs();
         console.log("Resetting list of songs!");
     }
