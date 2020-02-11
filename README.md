@@ -7,15 +7,6 @@ This project is open source, so feel free to contribute.
 
 Chrome Web Store Link (Playlist Generator) - https://chrome.google.com/webstore/detail/playlist-generator/gcnopleiakgahapanbdcegkccdifbbae
 
-TODO (important)
-* Create a bash or python script to zip all the necessary files up in the correct format for easy publishing of the extension on the web store
-* Add persistent memory so we can store banned songs/URLs between sessions (long term)
-* Fix the scrollbars so they are removed faster
-* Port extension to Firefox
-* Provide support for non-YouTube links (e.g. Vimeo, DailyMotion)
-* Create an interface to allow users to skip a song, go back to the previous song, or un-bookmark a song
-* Add functionality to store, remove, and modify previous playlists
-
 TODO (nice to have)
 * Hook up to Spotify API
 * Separate out songs by types/genres and mood for the user
