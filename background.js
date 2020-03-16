@@ -37,7 +37,7 @@ function startPlaylist(bookmarksId){
                   windowId: window.id
               }, function(tabs){
                 setTimeout(function() {
-                  recursePlaylistExec(tabs[0].id); // pass in the ID of the Google Chrome tab created by this window
+                  recursePlaylistLoop(tabs[0].id); // pass in the ID of the Google Chrome tab created by this window
               }, TIMEOUT_LENGTH)
               })
             })
@@ -45,7 +45,7 @@ function startPlaylist(bookmarksId){
     )
 }
 
-function recursePlaylistExec(tabId){
+function recursePlaylistLoop(tabId){
     if(removeScrollbars){
         chrome.tabs.executeScript(tabId, {
             code: "document.getElementsByTagName('html')[0].style.overflow = 'hidden';"
@@ -80,7 +80,7 @@ function recursePlaylistExec(tabId){
                     return navigateToNewSong(tabId);
                 } else{ // just call this function recursively so we can update the current time variable
                     setTimeout(function(){
-                        return recursePlaylistExec(tabId);
+                        return recursePlaylistLoop(tabId);
                     }, TIMEOUT_LENGTH);
                 }
             } catch(e){ // an exception occurred
@@ -106,7 +106,7 @@ function navigateToNewSong(tabId){
             currentTime = 0;
             endTime = 0;
             removeScrollbars = true;
-            return recursePlaylistExec(tabId);
+            return recursePlaylistLoop(tabId);
         }, TIMEOUT_LENGTH); // wait at least TIMEOUT_LENGTH milliseconds before executing this code because we don't want to just refresh instantly
     });
 }

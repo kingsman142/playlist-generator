@@ -47,7 +47,7 @@ function collectBookmarks(folder){
         }
     })
 
-    backgroundPage.console.log("=== Folder: " + folder.id + " contains " + folder.children.length + " songs ===");
+    backgroundPage.console.log("=== Folder: " + folder.title + " contains " + folder.children.length + " songs ===");
 }
 
 // takes a Youtube url and returns the video ID (e.g. transforms "https://www.youtube.com/watch?v=XTNPtzq9lxA&feature=youtu.be&t=2" to "XTNPtzq9lxA")

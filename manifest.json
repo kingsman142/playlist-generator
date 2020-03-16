@@ -18,9 +18,7 @@
   "permissions": [
     "activeTab",
     "bookmarks",
-    "tabs",
     "https://www.youtube.com/*",
-    "https://ajax.googleapis.com/auth/youtube",
     "storage"
   ]
 }
