@@ -2,8 +2,9 @@
   "manifest_version": 2,
 
   "name": "Playlist generator",
+  "short_name": "Playlist gen.",
   "description": "Turns your unused, youtube bookmarks that are laying around into a playlist loop so you can turn them into hours of entertainment!",
-  "version": "1.3",
+  "version": "1.21",
 
   "content_security_policy": "script-src 'self' https://apis.google.com; object-src 'self'",
 
