@@ -91,11 +91,15 @@ function getRecentPlaylists(){
                 recentsInsertButton.setAttribute("class", "recentsInsertButton ph-button-insert ph-btn-white");
                 var recentsDeleteButton = document.createElement("div");
                 recentsDeleteButton.setAttribute("class", "recentsDeleteButton ph-button-delete ph-btn-red");
+                var recentsPlaylistSizeText = document.createElement("div");
+                recentsPlaylistSizeText.setAttribute("class", "recentPlaylistsSizeText");
 
                 recentsInsertButton.appendChild(document.createTextNode(recentPlaylists[i]));
                 recentsDeleteButton.appendChild(document.createTextNode("X"));
+                recentsPlaylistSizeText.appendChild(document.createTextNode("Size: " + recentPlaylistsSizes[i] + " links"));
                 recentsListItem.appendChild(recentsInsertButton);
                 recentsInsertButton.insertAdjacentElement('afterend', recentsDeleteButton);
+                recentsDeleteButton.insertAdjacentElement('afterend', recentsPlaylistSizeText)
 
                 // when a user clicks a playlist insert button, autofill the playlist form
                 recentsInsertButton.addEventListener('click', function(event){ window.document.getElementById("foldersForm").value = event.toElement.innerHTML }, true);
