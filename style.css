@@ -107,9 +107,15 @@ body {
 	src: url("extravaganzza.ttf");
 }
 
-#bookmarksButton{
+#bookmarksButtonShuffle{
 	margin: auto;
 	margin-top: 15px;
+	width: 93vw;
+}
+
+#bookmarksButtonInOrder{
+	margin: auto;
+	margin-top: 5px;
 	width: 93vw;
 }
 
@@ -134,18 +140,18 @@ body {
     font-size: 18px;
 }
 .ph-btn-red {
-    background-color: #ED5A5A !important;
-    border-color: #EA4343 !important;
+	background-color: #9853c6;
+	border-color: #703399;
 }
 
 .ph-btn-red:hover, .ph-btn-red:focus, .ph-btn-red:active {
-    background: none repeat scroll 0 0 #EB4848 !important;
-    border-color: #E83131 !important;
+	background-color: #7e39ac;
+    border-color: #703399;
 }
 
 .ph-btn-green {
-	border-color: #3AC162;
 	background-color: #5FCF80;
+	border-color: #3AC162;
 }
 
 .ph-btn-green:hover, .ph-btn-green:focus, .ph-btn-green:active {
