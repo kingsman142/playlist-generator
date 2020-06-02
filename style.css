@@ -38,6 +38,11 @@ body {
 .recentsInsertButton{
 	width: 75%;
 	float: left;
+
+	white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -o-text-overflow: ellipsis;
 }
 
 .recentsDeleteButton{
@@ -179,7 +184,7 @@ body {
     white-space: nowrap;
     font-family: "extravaganzza", "Gotham Rounded A", "Gotham Rounded B", Helvetica, Arial, sans-serif;
     font-weight: 700;
-    padding: 2px 0px 2px 0px;
+    padding: 2px 2px 2px 2px;
 }
 
 .ph-button-delete {
