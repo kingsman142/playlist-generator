@@ -65,6 +65,14 @@ body {
 	font-family: "extravaganzza", "Gotham Rounded A", "Gotham Rounded B", Helvetica, Arial, sans-serif;
 }
 
+.errorText{
+	color: rgba(200, 0, 0, 0.6);
+	text-align: left;
+	font-size: 12px;
+	margin-left: 11px;
+	width: 90%;
+}
+
 .color-div{
 	height: 6px;
 	width: 29px;

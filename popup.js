@@ -22,6 +22,10 @@ function getBookmarkIds(shuffle = true){
         }
 
         backgroundPage.console.log("===== Total # of bookmarks: " + bookmarkIds.length + " =====");
+        if(bookmarkIds.length == 0){
+            displayEmptyPlaylistError();
+            return;
+        }
         updateRecentPlaylists(folderNamesList, bookmarkIds.length);
 
         var bgPage = backgroundPage;
@@ -102,7 +106,7 @@ function getRecentPlaylists(){
                 recentsDeleteButton.insertAdjacentElement('afterend', recentsPlaylistSizeText)
 
                 // when a user clicks a playlist insert button, autofill the playlist form
-                recentsInsertButton.addEventListener('click', function(event){ window.document.getElementById("foldersForm").value = event.toElement.innerHTML }, true);
+                recentsInsertButton.addEventListener('click', function(event){ insertPlaylist(event); }, true);
                 recentsDeleteButton.addEventListener('click', function(event){ deletePlaylist(event); }, true);
 
                 // update the UI with the new playlist insert and delete buttons
@@ -132,6 +136,11 @@ function updateRecentPlaylists(folderNamesList, numBookmarks){
         recentPlaylistsSizes = recentPlaylistsSizes.slice(0, 5);
         chrome.storage.sync.set({"recentPlaylists": [recentPlaylists, recentPlaylistsSizes]}, function(){ console.log("Added " + recentPlaylists[0] + " of length " + numBookmarks + " to recentPlaylists storage!"); })
     }
+}
+
+function insertPlaylist(event){
+    window.document.getElementById("foldersForm").value = event.toElement.innerHTML;
+    window.document.getElementById("foldersForm").focus();
 }
 
 function deletePlaylist(event){
@@ -164,12 +173,36 @@ function displayNoRecentPlaylistText(){
     recentPlaylistsList.appendChild(recentsListItem);
 }
 
+// when a user enters a list of playlist folders and zero bookmarks are found in them, display an error
+function displayEmptyPlaylistError(){
+    if(window.document.getElementById("playlistTooLongError") !== null) return; // this error already exists
+
+    var inputFieldsDiv = window.document.getElementById("bookmarksButtonShuffle");
+    var errorText = document.createElement("div");
+    errorText.setAttribute("class", "errorText");
+    errorText.setAttribute("id", "playlistTooLongError");
+    errorText.appendChild(document.createTextNode("Error: those folders don't contain any YouTube links!"));
+    inputFieldsDiv.insertAdjacentElement('beforebegin', errorText);
+}
+
+// remove all error messages from the popup
+function removeErrorMessages(){
+    var errorTextElements = window.document.getElementsByClassName("errorText");
+    for(var i = errorTextElements.length-1; i >= 0; i--){
+        errorTextElements[i].remove();
+    }
+}
+
 // calls the main program into action once the window loads and the user clicks the "Make playlist!" button
 window.onload = function(){
     getRecentPlaylists();
 
+    // when a user clicks the 'shuffle' or 'in-order' button, start the playlist
     window.document.getElementById("bookmarksButtonShuffle").addEventListener('click', function(){ getBookmarkIds(shuffle = true); }, true);
     window.document.getElementById("bookmarksButtonInOrder").addEventListener('click', function(){ getBookmarkIds(shuffle = false); }, true);
+
+    // when a user focuses on the input form, remove all error messages
+    window.document.getElementById("foldersForm").addEventListener('focus', function(){ removeErrorMessages(); });
 
     const foldersForm = window.document.getElementById("foldersForm")
     foldersForm.addEventListener('keydown', function(keyPressEvent){
