@@ -3,7 +3,7 @@
 
   "name": "Playlist generator",
   "short_name": "Playlist gen.",
-  "description": "Turns your unused, youtube bookmarks that are laying around into a playlist loop so you can turn them into hours of entertainment!",
+  "description": "Turns your unused, youtube bookmarks that are laying around into a playlist loop for hours of entertainment!",
   "version": "2.1",
 
   "content_security_policy": "script-src 'self' https://apis.google.com; object-src 'self'",
