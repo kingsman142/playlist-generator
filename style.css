@@ -1,7 +1,7 @@
 body {
 	/*font-family: "extravaganzza", "Museo Sans", "Segoe UI", "Lucida Grande", Tahoma, sans-serif;*/
 	font-size: 100%;
-	width: 225px;
+	width: 224px;
 	margin: 0px;
 	margin-bottom: 7px;
 	/*background-color: #80bfff;*/
@@ -30,14 +30,13 @@ body {
 
 .color-div{
 	height: 6px;
-	width: 28px;
+	width: 29px;
 	position: relative;
 }
 
 .green{
 	background-color: #C4E17F;
 	margin-left: 0px;
-	border-top-left-radius: 3px;
 }
 
 .yellow{
@@ -80,7 +79,6 @@ body {
 	background-color: #62C2E4;
 	margin-top: -6px;
 	margin-left: 196px;
-	border-top-right-radius: 3px;
 }
 
 [type='text'] {
