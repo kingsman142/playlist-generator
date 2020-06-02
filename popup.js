@@ -13,21 +13,7 @@ function getBookmarkIds(shuffle = true){
         var folderNamesString = window.document.getElementById("foldersForm").value;
         folderNamesList = parseFolders(folderNamesString);
 
-        // update recentPlaylists in local storage
-        var folderNamesString = folderNamesList.toString();
-        console.log("folder names string: " + folderNamesString);
-        if(folderNamesList.length > 0){ // valid folder names
-            if(recentPlaylists.includes(folderNamesString)){ // if this list already exists in the previous 5 played playlists, pop it from the array so we can move it to the 'most recent' playlist position
-                var folderNamesIndex = recentPlaylists.indexOf(folderNamesString);
-                if(folderNamesIndex > -1) recentPlaylists.splice(folderNamesIndex, 1);
-            }
-            console.log(recentPlaylists);
-            recentPlaylists.unshift(folderNamesString);
-            console.log(recentPlaylists);
-            recentPlaylists = recentPlaylists.slice(0, 5);
-            console.log(recentPlaylists);
-            chrome.storage.sync.set({"recentPlaylists": recentPlaylists}, function(){ console.log("Added " + recentPlaylists[0] + " to recentPlaylists storage!"); })
-        }
+        updateRecentPlaylists();
 
         for(var j = 0; j < folderNamesList.length; j++){
             bookmarks.forEach(function(folder){
@@ -94,9 +80,10 @@ function getRecentPlaylists(){
 
             // make modifications to the popup UI
             var recentPlaylistsList = window.document.getElementById("recentPlaylistsList");
-            for(var i = 0; i < recentPlaylists.length; i++){
+            for(var i = 0; i < recentPlaylists.length; i++){ // add a button for at most the 5 most recent playlists
                 var recentsListItem = document.createElement("div");
                 recentsListItem.setAttribute("class", "recentsListItem");
+                recentsListItem.setAttribute("id", "recents" + i)
                 var recentsInsertButton = document.createElement("div");
                 recentsInsertButton.setAttribute("class", "recentsInsertButton ph-button-insert ph-btn-white");
                 var recentsDeleteButton = document.createElement("div");
@@ -107,14 +94,59 @@ function getRecentPlaylists(){
                 recentsListItem.appendChild(recentsInsertButton);
                 recentsInsertButton.insertAdjacentElement('afterend', recentsDeleteButton);
 
+                // when a user clicks a playlist insert button, autofill the playlist form
+                recentsInsertButton.addEventListener('click', function(event){ window.document.getElementById("foldersForm").value = event.toElement.innerHTML }, true);
+                recentsDeleteButton.addEventListener('click', function(event){ deletePlaylist(event); }, true);
+
+                // update the UI with the new playlist insert and delete buttons
                 recentPlaylistsList.appendChild(recentsListItem);
             }
-            if(recentPlaylists.length == 0 || recentPlaylists === undefined){
-                console.log("EMPTY RECENT PLAYLISTS LIST!")
-                recentPlaylistsList.appendChild(document.createTextNode("No recent playlists"))
+            if(recentPlaylists.length == 0 || recentPlaylists === undefined){ // no recent playlists were available, so just display some filler text
+                displayNoRecentPlaylistText();
             }
         }
     )
+}
+
+function updateRecentPlaylists(){
+    // update recentPlaylists in local storage
+    var folderNamesString = folderNamesList.toString();
+    if(folderNamesList.length > 0){ // valid folder names
+        if(recentPlaylists.includes(folderNamesString)){ // if this list already exists in the previous 5 played playlists, pop it from the array so we can move it to the 'most recent' playlist position
+            var folderNamesIndex = recentPlaylists.indexOf(folderNamesString);
+            if(folderNamesIndex > -1) recentPlaylists.splice(folderNamesIndex, 1);
+        }
+        recentPlaylists.unshift(folderNamesString);
+        recentPlaylists = recentPlaylists.slice(0, 5);
+        chrome.storage.sync.set({"recentPlaylists": recentPlaylists}, function(){ console.log("Added " + recentPlaylists[0] + " to recentPlaylists storage!"); })
+    }
+}
+
+function deletePlaylist(event){
+    var playlistName = event.toElement.previousSibling.innerHTML; // the user clicked an "X" button, so find its sibling and the playlist name in that element
+    var playlistIndex = recentPlaylists.indexOf(playlistName);
+    if(playlistIndex > -1) recentPlaylists.splice(playlistIndex, 1);
+
+    // update recentPlaylists in local storage
+    chrome.storage.sync.set({"recentPlaylists": recentPlaylists}, function(){ console.log("Removed " + playlistName + " from recentPlaylists storage!"); })
+
+    // finally, remove the HTML element itself on the popup UI
+    event.toElement.parentNode.remove();
+
+    // if we've removed all recent playlists, make sure we add some "No recent playlists! text"
+    if(recentPlaylists.length == 0){
+        displayNoRecentPlaylistText();
+    }
+}
+
+// when there are no recent playlists available, fill the popup with filler text saying so
+function displayNoRecentPlaylistText(){
+    console.log("EMPTY RECENT PLAYLISTS LIST!")
+    var recentPlaylistsList = window.document.getElementById("recentPlaylistsList");
+    var recentsListItem = document.createElement("div");
+    recentsListItem.setAttribute("class", "recentsListItem");
+    recentsListItem.appendChild(document.createTextNode("No recent playlists!"));
+    recentPlaylistsList.appendChild(recentsListItem);
 }
 
 // calls the main program into action once the window loads and the user clicks the "Make playlist!" button
