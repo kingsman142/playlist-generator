@@ -6,17 +6,21 @@ const TIMEOUT_LENGTH = 2000; // wait at least TIMEOUT_LENGTH milliseconds before
 const WINDOW_WIDTH = 485;
 const WINDOW_HEIGHT = 475;
 
+// bookmarkIds keeps track of all possible songs we can use, even after we've looped through them all. availableSongs keeps track of which songs we haven't played yet.
 var bookmarkIds = []; // YouTube video IDs of each bookmark
-var availableSongs = []; // list of songs current available in the queue; play every song once, then refill the queue
+var availableSongs = []; // list of songs currently available in the queue; play every song once, then refill the queue
 var bannedSongs = new Set();
 var currentVideoId = null; // video ID of the video currently playing in the window
+
+var shuffle = true; // default value -- should we iterate through the songs randomly or in-order?
+var currSongIndex = 0;
 
 var currentTime = 0; // current number of seconds we have played in the video
 var endTime = 0; // total number of seconds there are in the video
 
 // main function to run the program
-function startPlaylist(bookmarksId){
-    bookmarkIds = bookmarksId;
+function startPlaylist(){
+    availableSongs = []; // reset availableSongs list because opening and closing the extension does not empty it; only reloading the extension empties availableSongs
 
     chrome.storage.sync.get(['bannedSongs'],
         function(returnDict){
@@ -25,7 +29,7 @@ function startPlaylist(bookmarksId){
             console.log(bannedSongs);
             console.log(" ");
 
-            currentVideoId = getRandomSongId()
+            currentVideoId = getNextSongId()
             chrome.windows.create({
                 url: "https://www.youtube.com/watch?v=" + currentVideoId,
                 type: 'popup',
@@ -85,7 +89,7 @@ function navigateToNewSong(tabId){
     // reset variables for next iteration
     currentTime = 0;
     endTime = 0;
-    currentVideoId = getRandomSongId();
+    currentVideoId = getNextSongId();
     newURL = "https://www.youtube.com/watch?v=" + currentVideoId;
 
     // load the url of the next video
@@ -100,15 +104,19 @@ function navigateToNewSong(tabId){
     });
 }
 
-function getRandomSongId(){
+function getNextSongId(){
     if(availableSongs.length == 0){
         populateAvailableSongs();
         console.log("Resetting list of songs!");
     }
 
-    var rand = Math.floor(Math.random() * availableSongs.length);
-    var newSongIndex = availableSongs[rand];
-    availableSongs.splice(rand, 1);
+    var availableSongsIndex = 0;
+    if(shuffle){ // choose a random song index
+        availableSongsIndex = Math.floor(Math.random() * availableSongs.length);
+    }
+
+    var newSongIndex = availableSongs[availableSongsIndex];
+    availableSongs.splice(availableSongsIndex, 1);
     console.log("Chose song at index: " + newSongIndex + ", ID: " + bookmarkIds[newSongIndex] + ", available songs: " + availableSongs.length);
     return bookmarkIds[newSongIndex];
 }
@@ -120,6 +128,7 @@ function removeBannedSongs(){
 
 function populateAvailableSongs(){
     removeBannedSongs();
+    availableSongs = [];
     for(var i = 0; i < bookmarkIds.length; i++){
         availableSongs.push(i);
     }
