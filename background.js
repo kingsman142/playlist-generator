@@ -7,7 +7,6 @@ const WINDOW_WIDTH = 485;
 const WINDOW_HEIGHT = 475;
 
 var bookmarkIds = []; // YouTube video IDs of each bookmark
-var removeScrollbars = true; // should we remove scrollbars once the window is generated?
 var availableSongs = []; // list of songs current available in the queue; play every song once, then refill the queue
 var bannedSongs = new Set();
 var currentVideoId = null; // video ID of the video currently playing in the window
@@ -21,7 +20,7 @@ function startPlaylist(bookmarksId){
 
     chrome.storage.sync.get(['bannedSongs'],
         function(returnDict){
-            console.log("Grabbed banned songs list");
+            console.log("Grabbed banned songs list:");
             bannedSongs = new Set(returnDict.bannedSongs);
             console.log(bannedSongs);
             console.log(" ");
@@ -46,15 +45,6 @@ function startPlaylist(bookmarksId){
 }
 
 function recursePlaylistLoop(tabId){
-    if(removeScrollbars){
-        chrome.tabs.executeScript(tabId, {
-            code: "document.getElementsByTagName('html')[0].style.overflow = 'hidden';"
-        }, function(){
-            console.log("Removing scrollbars");
-            removeScrollbars = false;
-        });
-    }
-
     chrome.tabs.executeScript(tabId, {
         code:  `var currentTime = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuenow');
                 var endTime = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuemax');
@@ -105,7 +95,6 @@ function navigateToNewSong(tabId){
         setTimeout(function(){ // navigate to the new song
             currentTime = 0;
             endTime = 0;
-            removeScrollbars = true;
             return recursePlaylistLoop(tabId);
         }, TIMEOUT_LENGTH); // wait at least TIMEOUT_LENGTH milliseconds before executing this code because we don't want to just refresh instantly
     });
