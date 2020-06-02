@@ -5,15 +5,15 @@ James Hahn, 2016
 var bookmarkIds = []; // YouTube video IDs of each bookmark
 var folderNamesList = []; // names of folders where we should search for YouTube bookmarks
 var backgroundPage = chrome.extension.getBackgroundPage() // keep an active instance of the background page for easy logging
+
 var recentPlaylists = []; // a list of recent playlists requested by the user through the extension
+var recentPlaylistsSizes = [];
 
 // main function to run the program -- find the YouTube video Ids of the bookmarks in the folders specified by the user
 function getBookmarkIds(shuffle = true){
     chrome.bookmarks.getTree(function(bookmarks){ // iterate over the bookmarks on the bookmarks bar
         var folderNamesString = window.document.getElementById("foldersForm").value;
         folderNamesList = parseFolders(folderNamesString);
-
-        updateRecentPlaylists();
 
         for(var j = 0; j < folderNamesList.length; j++){
             bookmarks.forEach(function(folder){
@@ -22,6 +22,7 @@ function getBookmarkIds(shuffle = true){
         }
 
         backgroundPage.console.log("===== Total # of bookmarks: " + bookmarkIds.length + " =====");
+        updateRecentPlaylists(folderNamesList, bookmarkIds.length);
 
         var bgPage = backgroundPage;
         bgPage.shuffle = shuffle;
@@ -74,8 +75,10 @@ function getRecentPlaylists(){
     chrome.storage.sync.get(['recentPlaylists'],
         function(returnDict){
             console.log("Grabbed recent playlists:");
-            recentPlaylists = returnDict.recentPlaylists;
+            recentPlaylists = returnDict.recentPlaylists[0];
+            recentPlaylistsSizes = returnDict.recentPlaylists[1];
             console.log(recentPlaylists);
+            console.log(recentPlaylistsSizes);
             console.log(" ");
 
             // make modifications to the popup UI
@@ -108,27 +111,35 @@ function getRecentPlaylists(){
     )
 }
 
-function updateRecentPlaylists(){
+function updateRecentPlaylists(folderNamesList, numBookmarks){
     // update recentPlaylists in local storage
     var folderNamesString = folderNamesList.toString();
-    if(folderNamesList.length > 0){ // valid folder names
+    if(folderNamesList.length > 0 && numBookmarks > 0){ // valid folder names
         if(recentPlaylists.includes(folderNamesString)){ // if this list already exists in the previous 5 played playlists, pop it from the array so we can move it to the 'most recent' playlist position
             var folderNamesIndex = recentPlaylists.indexOf(folderNamesString);
-            if(folderNamesIndex > -1) recentPlaylists.splice(folderNamesIndex, 1);
+            if(folderNamesIndex > -1){
+                recentPlaylists.splice(folderNamesIndex, 1);
+                recentPlaylistsSizes.splice(folderNamesIndex, 1);
+            }
         }
         recentPlaylists.unshift(folderNamesString);
         recentPlaylists = recentPlaylists.slice(0, 5);
-        chrome.storage.sync.set({"recentPlaylists": recentPlaylists}, function(){ console.log("Added " + recentPlaylists[0] + " to recentPlaylists storage!"); })
+        recentPlaylistsSizes.unshift(numBookmarks);
+        recentPlaylistsSizes = recentPlaylistsSizes.slice(0, 5);
+        chrome.storage.sync.set({"recentPlaylists": [recentPlaylists, recentPlaylistsSizes]}, function(){ console.log("Added " + recentPlaylists[0] + " of length " + numBookmarks + " to recentPlaylists storage!"); })
     }
 }
 
 function deletePlaylist(event){
     var playlistName = event.toElement.previousSibling.innerHTML; // the user clicked an "X" button, so find its sibling and the playlist name in that element
     var playlistIndex = recentPlaylists.indexOf(playlistName);
-    if(playlistIndex > -1) recentPlaylists.splice(playlistIndex, 1);
+    if(playlistIndex > -1){
+        recentPlaylists.splice(playlistIndex, 1);
+        recentPlaylistsSizes.splice(playlistIndex, 1);
+    }
 
     // update recentPlaylists in local storage
-    chrome.storage.sync.set({"recentPlaylists": recentPlaylists}, function(){ console.log("Removed " + playlistName + " from recentPlaylists storage!"); })
+    chrome.storage.sync.set({"recentPlaylists": [recentPlaylists, recentPlaylistsSizes]}, function(){ console.log("Removed " + playlistName + " from recentPlaylists storage!"); })
 
     // finally, remove the HTML element itself on the popup UI
     event.toElement.parentNode.remove();
