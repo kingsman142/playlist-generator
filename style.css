@@ -13,19 +13,44 @@ body {
 	src: url(extravaganzza.ttf);
 }
 
-#title{
-	margin: auto;
-	display: block;
-	margin-left: 33px;
-	font-size: 20px;
-	font-family: "extravaganzza", "Gotham Rounded A", "Gotham Rounded B", Helvetica, Arial, sans-serif;
-}
-
 #description{
 	font-family: "extravaganzza", "Gotham Rounded A", "Gotham Rounded B", Helvetica, Arial, sans-serif;
 	color: rgba(0, 0, 0, .6);
 	font-size: 12px;
 	margin-left: 9px;
+}
+
+#recentPlaylistsTitle{
+	margin-top: 10px;
+}
+
+#recentPlaylistsList{
+	width: 93vw;
+	margin: auto;
+	margin-top: 10px;
+}
+
+.recentsListItem{
+	height: 30px;
+	text-align: center;
+}
+
+.recentsInsertButton{
+	width: 75%;
+	float: left;
+}
+
+.recentsDeleteButton{
+	width: 20%;
+	float: right;
+}
+
+.title{
+	margin: auto;
+	display: block;
+	text-align: center;
+	font-size: 20px;
+	font-family: "extravaganzza", "Gotham Rounded A", "Gotham Rounded B", Helvetica, Arial, sans-serif;
 }
 
 .color-div{
@@ -139,13 +164,68 @@ body {
     padding: 8px 39px 8px;
     font-size: 18px;
 }
+
+.ph-button-insert {
+    border-style: solid;
+    border-width: 0px 0px 3px;
+    box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.1) inset;
+    color: #FFFFFF;
+	cursor: pointer;
+	border-radius: 4px;
+    font-style: normal;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    transition: all 200ms ease-in-out 0s;
+    white-space: nowrap;
+    font-family: "extravaganzza", "Gotham Rounded A", "Gotham Rounded B", Helvetica, Arial, sans-serif;
+    font-weight: 700;
+    padding: 2px 0px 2px 0px;
+}
+
+.ph-button-delete {
+    border-style: solid;
+    border-width: 0px 0px 3px;
+    box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.1) inset;
+    color: #FFFFFF;
+	cursor: pointer;
+	border-radius: 4px;
+    font-style: normal;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    transition: all 200ms ease-in-out 0s;
+    white-space: nowrap;
+    font-family: "extravaganzza", "Gotham Rounded A", "Gotham Rounded B", Helvetica, Arial, sans-serif;
+    font-weight: 700;
+    padding: 2px 0px 2px 0px;
+}
+
+.ph-btn-white {
+	background-color: #feaa01;
+	border-color: #b27701;
+}
+
+.ph-btn-white:hover, .ph-btn-white:focus, .ph-btn-white:active {
+	background-color: #cb8801;
+    border-color: #b27701;
+}
+
 .ph-btn-red {
-	background-color: #9853c6;
-	border-color: #703399;
+	background-color: #F0776C;
+	border-color: #E93F2F;
 }
 
 .ph-btn-red:hover, .ph-btn-red:focus, .ph-btn-red:active {
-	background-color: #7e39ac;
+	background-color: #EC5446;
+    border-color: #E93F2F;
+}
+
+.ph-btn-purple {
+	background-color: #9853C6;
+	border-color: #703399;
+}
+
+.ph-btn-purple:hover, .ph-btn-purple:focus, .ph-btn-purple:active {
+	background-color: #7E39AC;
     border-color: #703399;
 }
 
