@@ -91,6 +91,8 @@ function getRecentPlaylists(){
                 var recentsListItem = document.createElement("div");
                 recentsListItem.setAttribute("class", "recentsListItem");
                 recentsListItem.setAttribute("id", "recents" + i)
+                var recentsListItemButtons = document.createElement("div");
+                recentsListItemButtons.setAttribute("id", "recentListItemButtonsDiv");
                 var recentsInsertButton = document.createElement("div");
                 recentsInsertButton.setAttribute("class", "recentsInsertButton ph-button-insert ph-btn-white");
                 var recentsDeleteButton = document.createElement("div");
@@ -98,12 +100,14 @@ function getRecentPlaylists(){
                 var recentsPlaylistSizeText = document.createElement("div");
                 recentsPlaylistSizeText.setAttribute("class", "recentPlaylistsSizeText");
 
+                // prepare to add a bunch of elements to the UI for this list item
                 recentsInsertButton.appendChild(document.createTextNode(recentPlaylists[i]));
                 recentsDeleteButton.appendChild(document.createTextNode("X"));
                 recentsPlaylistSizeText.appendChild(document.createTextNode("Size: " + recentPlaylistsSizes[i] + " links"));
-                recentsListItem.appendChild(recentsInsertButton);
+                recentsListItem.appendChild(recentsListItemButtons);
+                recentsListItemButtons.appendChild(recentsInsertButton);
                 recentsInsertButton.insertAdjacentElement('afterend', recentsDeleteButton);
-                recentsDeleteButton.insertAdjacentElement('afterend', recentsPlaylistSizeText)
+                recentsListItemButtons.insertAdjacentElement('afterend', recentsPlaylistSizeText);
 
                 // when a user clicks a playlist insert button, autofill the playlist form
                 recentsInsertButton.addEventListener('click', function(event){ insertPlaylist(event); }, true);
@@ -155,7 +159,7 @@ function deletePlaylist(event){
     chrome.storage.sync.set({"recentPlaylists": [recentPlaylists, recentPlaylistsSizes]}, function(){ console.log("Removed " + playlistName + " from recentPlaylists storage!"); })
 
     // finally, remove the HTML element itself on the popup UI
-    event.toElement.parentNode.remove();
+    event.toElement.parentNode.parentNode.remove(); // take delete button, get recentListItemButtonsDiv, then get recentListItem div, and remove that
 
     // if we've removed all recent playlists, make sure we add some "No recent playlists! text"
     if(recentPlaylists.length == 0){
@@ -207,7 +211,10 @@ window.onload = function(){
     const foldersForm = window.document.getElementById("foldersForm")
     foldersForm.addEventListener('keydown', function(keyPressEvent){
         pressedKeyCode = keyPressEvent.which || keyPressEvent.keyCode; // both are deprecated, but .code doesn't work in Chrome v79.0.3945.117
-        if(pressedKeyCode === 13) getBookmarkIds(shuffle = true); // user hit the 'Enter' key
+        if(pressedKeyCode === 13){
+            removeErrorMessages();
+            getBookmarkIds(shuffle = true); // user hit the 'Enter' key
+        }
     })
     foldersForm.focus(); // ensures the foldersForm element is the one that's activated when the 'Enter' key is hit; also always the user to type immediately without clicking in the input field
 }

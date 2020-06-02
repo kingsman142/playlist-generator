@@ -30,6 +30,11 @@ body {
 	margin-top: 10px;
 }
 
+#recentListItemButtonsDiv{
+	overflow: hidden;
+	vertical-align: middle;
+}
+
 .recentsListItem{
 	text-align: center;
 	margin-bottom: 5px;
@@ -38,11 +43,12 @@ body {
 .recentsInsertButton{
 	width: 75%;
 	float: left;
-
-	white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
-    -o-text-overflow: ellipsis;
+}
+
+.recentsInsertButton:hover{
+	white-space: normal;
+	height: inherit;
 }
 
 .recentsDeleteButton{
@@ -195,11 +201,10 @@ body {
     font-style: normal;
     text-decoration: none;
     text-overflow: ellipsis;
-    transition: all 200ms ease-in-out 0s;
     white-space: nowrap;
     font-family: "extravaganzza", "Gotham Rounded A", "Gotham Rounded B", Helvetica, Arial, sans-serif;
     font-weight: 700;
-    padding: 2px 2px 2px 2px;
+    padding: 2px 4px 2px 4px;
 }
 
 .ph-button-delete {
@@ -212,7 +217,6 @@ body {
     font-style: normal;
     text-decoration: none;
     text-overflow: ellipsis;
-    transition: all 200ms ease-in-out 0s;
     white-space: nowrap;
     font-family: "extravaganzza", "Gotham Rounded A", "Gotham Rounded B", Helvetica, Arial, sans-serif;
     font-weight: 700;
