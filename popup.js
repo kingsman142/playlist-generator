@@ -71,6 +71,7 @@ function findVideoID(url){
 function parseFolders(names){
     folderNames = names.split(","); // transform "Music, Music 2, Music 3" to ["Music", " Music 2", " Music 3"]
     folderNames = folderNames.map(folderName => folderName.trim()); // trim leading/trailing whitespace i.e. transform ["Music", " Music 2", " Music 3"] to ["Music", "Music 2", "Music 3"]
+    folderNames = folderNames.filter(folderName => folderName.length > 0); // if the user inputs "" into the foldersForm input element, then folderNames will be [""], so just remove any empty strings to get an empty list
     backgroundPage.console.log("Folder names: " + folderNames.toString());
     return folderNames;
 }
