@@ -24,7 +24,7 @@ function startPlaylist(){
 
     chrome.storage.sync.get(['bannedSongs'],
         function(returnDict){
-            console.log("Grabbed banned songs list:");
+            console.info("INFO (Playlist Generator): Grabbed banned songs list:");
             bannedSongs = new Set(returnDict.bannedSongs);
             console.log(bannedSongs);
             console.log(" ");
@@ -65,7 +65,7 @@ function recursePlaylistLoop(tabId){
                 if((currentTime == endTime && endTime != 0) || availability >= 1){ // marks the end of the song OR the video is unavailable
                     if(availability >= 1){
                         bannedSongs.add(currentVideoId);
-                        console.log("Banning song " + currentVideoId)
+                        console.warn("WARN (Playlist Generator): Banning song " + currentVideoId)
                         console.log(bannedSongs)
                         console.log(" ")
                         chrome.storage.sync.set({"bannedSongs": Array.from(bannedSongs)}, function(){ console.log("Updated banned songs list"); })
@@ -117,7 +117,7 @@ function getNextSongId(){
 
     var newSongIndex = availableSongs[availableSongsIndex];
     availableSongs.splice(availableSongsIndex, 1);
-    console.log("Chose song at index: " + newSongIndex + ", ID: " + bookmarkIds[newSongIndex] + ", available songs: " + availableSongs.length);
+    console.info("INFO (Playlist Generator): Chose song at index: " + newSongIndex + ", ID: " + bookmarkIds[newSongIndex] + ", available songs: " + availableSongs.length);
     return bookmarkIds[newSongIndex];
 }
 

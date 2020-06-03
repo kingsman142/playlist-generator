@@ -21,7 +21,7 @@ function getBookmarkIds(shuffle = true){
             })
         }
 
-        backgroundPage.console.log("===== Total # of bookmarks: " + bookmarkIds.length + " =====");
+        backgroundPage.console.info("INFO (Playlist Generator): Total # of bookmarks is " + bookmarkIds.length);
         if(bookmarkIds.length == 0){
             displayEmptyPlaylistError();
             return;
@@ -57,7 +57,7 @@ function collectBookmarks(folder){
         }
     })
 
-    backgroundPage.console.log("=== Folder: " + folder.title + " contains " + folder.children.length + " songs ===");
+    backgroundPage.console.info("INFO (Playlist Generator): Folder: " + folder.title + " contains " + folder.children.length + " songs");
 }
 
 // takes a Youtube url and returns the video ID (e.g. transforms "https://www.youtube.com/watch?v=XTNPtzq9lxA&feature=youtu.be&t=2" to "XTNPtzq9lxA")
@@ -71,19 +71,24 @@ function findVideoID(url){
 function parseFolders(names){
     folderNames = names.split(","); // transform "Music, Music 2, Music 3" to ["Music", " Music 2", " Music 3"]
     folderNames = folderNames.map(folderName => folderName.trim()); // trim leading/trailing whitespace i.e. transform ["Music", " Music 2", " Music 3"] to ["Music", "Music 2", "Music 3"]
-    backgroundPage.console.log(folderNames);
+    backgroundPage.console.log("Folder names: " + folderNames.toString());
     return folderNames;
 }
 
 function getRecentPlaylists(){
     chrome.storage.sync.get(['recentPlaylists'],
         function(returnDict){
-            console.log("Grabbed recent playlists:");
-            recentPlaylists = returnDict.recentPlaylists[0];
-            recentPlaylistsSizes = returnDict.recentPlaylists[1];
-            console.log(recentPlaylists);
-            console.log(recentPlaylistsSizes);
-            console.log(" ");
+            console.log("INFO: Grabbed recent playlists:");
+            if("recentPlaylists" in returnDict && returnDict.recentPlaylists instanceof Array && returnDict.recentPlaylists.length == 2){ // recentPlaylists exists, it's an array, and it has two elements
+                // check that both elements are Arrays
+                if(returnDict.recentPlaylists[0] instanceof Array) recentPlaylists = returnDict.recentPlaylists[0];
+                if(returnDict.recentPlaylists[1] instanceof Array) recentPlaylistsSizes = returnDict.recentPlaylists[1];
+                console.log(recentPlaylists);
+                console.log(recentPlaylistsSizes);
+                console.log(" ");
+            } else{
+                console.error("ERROR (Playlist Generator): Invalid returnDict.recentPlaylists; resetting both to their default value of empty lists []")
+            }
 
             // make modifications to the popup UI
             var recentPlaylistsList = window.document.getElementById("recentPlaylistsList");
@@ -116,7 +121,7 @@ function getRecentPlaylists(){
                 // update the UI with the new playlist insert and delete buttons
                 recentPlaylistsList.appendChild(recentsListItem);
             }
-            if(recentPlaylists.length == 0 || recentPlaylists === undefined){ // no recent playlists were available, so just display some filler text
+            if(recentPlaylists === undefined || recentPlaylists.length == 0){ // no recent playlists were available, so just display some filler text
                 displayNoRecentPlaylistText();
             }
         }
@@ -138,7 +143,7 @@ function updateRecentPlaylists(folderNamesList, numBookmarks){
         recentPlaylists = recentPlaylists.slice(0, 5);
         recentPlaylistsSizes.unshift(numBookmarks);
         recentPlaylistsSizes = recentPlaylistsSizes.slice(0, 5);
-        chrome.storage.sync.set({"recentPlaylists": [recentPlaylists, recentPlaylistsSizes]}, function(){ console.log("Added " + recentPlaylists[0] + " of length " + numBookmarks + " to recentPlaylists storage!"); })
+        chrome.storage.sync.set({"recentPlaylists": [recentPlaylists, recentPlaylistsSizes]}, function(){ console.info("INFO (Playlist Generator): Added " + recentPlaylists[0] + " of length " + numBookmarks + " to recentPlaylists storage!"); })
     }
 }
 
@@ -156,20 +161,20 @@ function deletePlaylist(event){
     }
 
     // update recentPlaylists in local storage
-    chrome.storage.sync.set({"recentPlaylists": [recentPlaylists, recentPlaylistsSizes]}, function(){ console.log("Removed " + playlistName + " from recentPlaylists storage!"); })
+    chrome.storage.sync.set({"recentPlaylists": [recentPlaylists, recentPlaylistsSizes]}, function(){ console.info("INFO (Playlist Generator): Removed " + playlistName + " from recentPlaylists storage!"); })
 
     // finally, remove the HTML element itself on the popup UI
     event.toElement.parentNode.parentNode.remove(); // take delete button, get recentListItemButtonsDiv, then get recentListItem div, and remove that
 
     // if we've removed all recent playlists, make sure we add some "No recent playlists! text"
-    if(recentPlaylists.length == 0){
+    if(recentPlaylists === undefined || recentPlaylists.length == 0){
         displayNoRecentPlaylistText();
     }
 }
 
 // when there are no recent playlists available, fill the popup with filler text saying so
 function displayNoRecentPlaylistText(){
-    console.log("EMPTY RECENT PLAYLISTS LIST!")
+    console.info("INFO (Playlist Generator): The recentPlaylists list is empty!")
     var recentPlaylistsList = window.document.getElementById("recentPlaylistsList");
     var recentsListItem = document.createElement("div");
     recentsListItem.setAttribute("class", "recentsListItem");
