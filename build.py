@@ -2,6 +2,7 @@ import os
 import zipfile
 import glob
 import json
+import sys
 
 # meta-information for the build process (list the required files for the output zip fiile + grab the extension's version from the manifest file)
 required_files = ["*.js", "*.css", "*.html", "*.png", "*.ttf", "manifest.json"]
@@ -18,6 +19,9 @@ for pattern in required_files:
     zipped_filenames += glob.glob(pattern)
 
 # zip all the files
+if os.path.exists("Playlist_release_v{}.zip".format(extension_version)):
+    print("The file Playlist_release_v{}.zip already exists. Please delete it to proceed!".format(extension_version))
+    sys.exit()
 print("Zipping the following files:\n")
 zip_file = zipfile.ZipFile("Playlist_release_v{}.zip".format(extension_version), "w", zipfile.ZIP_DEFLATED) # create zip file
 for filename in zipped_filenames:

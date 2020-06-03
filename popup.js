@@ -78,8 +78,8 @@ function parseFolders(names){
 function getRecentPlaylists(){
     chrome.storage.sync.get(['recentPlaylists'],
         function(returnDict){
-            console.log("INFO: Grabbed recent playlists:");
-            if("recentPlaylists" in returnDict && returnDict.recentPlaylists instanceof Array && returnDict.recentPlaylists.length == 2){ // recentPlaylists exists, it's an array, and it has two elements
+            console.info("INFO (Playlist Generator): Grabbed recent playlists return dictionary: " + returnDict);
+            if(returnDict !== undefined && "recentPlaylists" in returnDict && returnDict.recentPlaylists instanceof Array && returnDict.recentPlaylists.length == 2){ // recentPlaylists exists, it's an array, and it has two elements
                 // check that both elements are Arrays
                 if(returnDict.recentPlaylists[0] instanceof Array) recentPlaylists = returnDict.recentPlaylists[0];
                 if(returnDict.recentPlaylists[1] instanceof Array) recentPlaylistsSizes = returnDict.recentPlaylists[1];
@@ -148,12 +148,12 @@ function updateRecentPlaylists(folderNamesList, numBookmarks){
 }
 
 function insertPlaylist(event){
-    window.document.getElementById("foldersForm").value = event.toElement.innerHTML;
+    window.document.getElementById("foldersForm").value = event.target.innerHTML;
     window.document.getElementById("foldersForm").focus();
 }
 
 function deletePlaylist(event){
-    var playlistName = event.toElement.previousSibling.innerHTML; // the user clicked an "X" button, so find its sibling and the playlist name in that element
+    var playlistName = event.target.previousSibling.innerHTML; // the user clicked an "X" button, so find its sibling and the playlist name in that element
     var playlistIndex = recentPlaylists.indexOf(playlistName);
     if(playlistIndex > -1){
         recentPlaylists.splice(playlistIndex, 1);
@@ -164,7 +164,7 @@ function deletePlaylist(event){
     chrome.storage.sync.set({"recentPlaylists": [recentPlaylists, recentPlaylistsSizes]}, function(){ console.info("INFO (Playlist Generator): Removed " + playlistName + " from recentPlaylists storage!"); })
 
     // finally, remove the HTML element itself on the popup UI
-    event.toElement.parentNode.parentNode.remove(); // take delete button, get recentListItemButtonsDiv, then get recentListItem div, and remove that
+    event.target.parentNode.parentNode.remove(); // take delete button, get recentListItemButtonsDiv, then get recentListItem div, and remove that
 
     // if we've removed all recent playlists, make sure we add some "No recent playlists! text"
     if(recentPlaylists === undefined || recentPlaylists.length == 0){
@@ -178,7 +178,10 @@ function displayNoRecentPlaylistText(){
     var recentPlaylistsList = window.document.getElementById("recentPlaylistsList");
     var recentsListItem = document.createElement("div");
     recentsListItem.setAttribute("class", "recentsListItem");
-    recentsListItem.appendChild(document.createTextNode("No recent playlists!"));
+    var noRecentsErrorText = document.createElement("div");
+    noRecentsErrorText.setAttribute("id", "recentsListEmptyText");
+    noRecentsErrorText.appendChild(document.createTextNode("No recent playlists!"));
+    recentsListItem.appendChild(noRecentsErrorText);
     recentPlaylistsList.appendChild(recentsListItem);
 }
 

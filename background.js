@@ -25,7 +25,9 @@ function startPlaylist(){
     chrome.storage.sync.get(['bannedSongs'],
         function(returnDict){
             console.info("INFO (Playlist Generator): Grabbed banned songs list:");
-            bannedSongs = new Set(returnDict.bannedSongs);
+            if(returnDict !== undefined && "bannedSongs" in returnDict){
+                bannedSongs = new Set(returnDict.bannedSongs);
+            }
             console.log(bannedSongs);
             console.log(" ");
 

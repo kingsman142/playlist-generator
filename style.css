@@ -6,6 +6,7 @@ body {
 	margin-bottom: 7px;
 	/*background-color: #80bfff;*/
 	background-color: #F9EEEE;
+	overflow: hidden;
 }
 
 @font-face{
@@ -33,6 +34,11 @@ body {
 #recentListItemButtonsDiv{
 	overflow: hidden;
 	vertical-align: middle;
+}
+
+#recentsListEmptyText{
+	font-family: "extravaganzza", "Gotham Rounded A", "Gotham Rounded B", Helvetica, Arial, sans-serif;
+	color: #E93F2F;
 }
 
 .recentsListItem{
@@ -77,6 +83,7 @@ body {
 	font-size: 12px;
 	margin-left: 11px;
 	width: 90%;
+	font-family: "extravaganzza", "Gotham Rounded A", "Gotham Rounded B", Helvetica, Arial, sans-serif;
 }
 
 .color-div{
