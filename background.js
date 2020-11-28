@@ -54,18 +54,18 @@ function recursePlaylistLoop(tabId){
     chrome.tabs.executeScript(tabId, {
         code:  `var currentTime = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuenow');
                 var endTime = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuemax');
-                var availability = document.getElementsByClassName('reason').length;
-                [currentTime, endTime, availability]`
+                var unavailable = document.getElementById('reason') instanceof Object;
+                [currentTime, endTime, unavailable]`
     },  function(results){
             if(chrome.runtime.lastError) return;
 
             try{
                 currentTime = results[0][0]; // current time in the player
                 endTime = results[0][1]; // end time of the player
-                availability = results[0][2]; // check if the player has any HTML reasons with "reasons" why a video is unavailable
+                unavailable = results[0][2]; // check if the player has any HTML reasons with "reasons" why a video is unavailable
 
-                if((currentTime == endTime && endTime != 0) || availability >= 1){ // marks the end of the song OR the video is unavailable
-                    if(availability >= 1){
+                if((currentTime == endTime && endTime != 0) || unavailable == true){ // marks the end of the song OR the video is unavailable
+                    if(unavailable == true){
                         bannedSongs.add(currentVideoId);
                         console.warn("WARN (Playlist Generator): Banning song " + currentVideoId)
                         console.log(bannedSongs)
