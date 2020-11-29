@@ -112,9 +112,8 @@ function getNextSongId(){
         console.log("Resetting list of songs!");
     }
 
-    var availableSongsIndex = 0;
-    var newSongIndex = availableSongs[availableSongsIndex];
-    availableSongs.splice(availableSongsIndex, 1);
+    var newSongIndex = availableSongs[0];
+    availableSongs.splice(0, 1);
     console.info("INFO (Playlist Generator): Chose song at index: " + newSongIndex + ", ID: " + bookmarkIds[newSongIndex] + ", available songs: " + availableSongs.length);
     return bookmarkIds[newSongIndex];
 }
@@ -132,12 +131,12 @@ function populateAvailableSongs(){
     }
     if(shuffle) {
         // Shuffle songs once with Fisher-Yates algorithm
-        var j, x, i;
-        for (i = availableSongs.length - 1; i > 0; i--) {
-            j = Math.floor(Math.random() * (i + 1));
-            x = availableSongs[i];
-            availableSongs[i] = availableSongs[j];
-            availableSongs[j] = x;
+        var newSongId, tmp, endOfListIndex;
+        for (endOfListIndex = availableSongs.length - 1; endOfListIndex > 0; endOfListIndex--) {
+            newSongId = Math.floor(Math.random() * (endOfListIndex + 1));
+            tmp = availableSongs[endOfListIndex];
+            availableSongs[endOfListIndex] = availableSongs[newSongId];
+            availableSongs[newSongId] = tmp;
         }
     }
 }
