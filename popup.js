@@ -4,7 +4,7 @@ James Hahn, 2016
 
 var bookmarkIds = []; // YouTube video IDs of each bookmark
 var folderNamesList = []; // names of folders where we should search for YouTube bookmarks
-var backgroundPage = chrome.extension.getBackgroundPage() // keep an active instance of the background page for easy logging
+var folderNamesLengths = {}; // how many bookmarks are in each folder we're looking for?
 
 var recentPlaylists = []; // a list of recent playlists requested by the user through the extension
 var recentPlaylistsSizes = [];
@@ -12,31 +12,53 @@ var recentPlaylistsSizes = [];
 // main function to run the program -- find the YouTube video Ids of the bookmarks in the folders specified by the user
 function getBookmarkIds(shuffle = true){
     chrome.bookmarks.getTree(function(bookmarks){ // iterate over the bookmarks on the bookmarks bar
+        // No idea why I have to do this, but had to make this change for manifest v3 -- grabs all items on bookmarks bar
+        // I think the general flow is:
+        //   Chrome [Bookmarks Manager]
+        //   -> Bookmarks Manager (0th element)
+        //   -> [Bookmarks bar, Other bookmarks] (children)
+        //   -> Bookmarks bar (0th element)
+        //   -> [x1, x2, x3, ..., xN] (the children a.k.a. all items on bookmarks bar)
+        bookmarks = bookmarks[0]["children"][0]["children"];
+
         var folderNamesString = window.document.getElementById("foldersForm").value;
         folderNamesList = parseFolders(folderNamesString);
 
         for(var j = 0; j < folderNamesList.length; j++){
             bookmarks.forEach(function(folder){
                 searchForBookmarks(folder, folderNamesList[j]); // collect all bookmarks in the "Music" folder and put them into the bookmarkIds array
-            })
+            });
         }
 
-        backgroundPage.console.info("INFO (Playlist Generator): Total # of bookmarks is " + bookmarkIds.length);
         if(bookmarkIds.length == 0){
             displayEmptyPlaylistError();
             return;
         }
         updateRecentPlaylists(folderNamesList, bookmarkIds.length);
 
-        var bgPage = backgroundPage;
-        bgPage.shuffle = shuffle;
-        bgPage.bookmarkIds = bookmarkIds
-        bgPage.startPlaylist(); // must move the main functionality of the program to background.js so the program does not stop after the popup is closed
+        // must move the main functionality of the program to background.js so the program does not stop after the popup is closed
+        chrome.runtime.sendMessage({
+          "shuffle": shuffle,
+          "bookmarkIds": bookmarkIds,
+          "folderNamesList": folderNamesList,
+          "folderNamesLengths": folderNamesLengths
+        });
+        resetVariables();
+
     });
+}
+
+function resetVariables(){
+    bookmarkIds = []; // YouTube video IDs of each bookmark
+    var folderNamesList = []; // names of folders where we should search for YouTube bookmarks
+    var folderNamesLengths = {}; // how many bookmarks are in each folder we're looking for?
 }
 
 // traverses entire list of bookmarks to find all the folders containing music (specified by user) and then adds every Youtube bookmark to the bookmarkIds array
 function searchForBookmarks(folder, title){
+    if(!folder.children) return;
+    if(folder.title == title) collectBookmarks(folder); // unique instance where the folder the user is searching for is on the root directory of the bookmarks bar
+
     folder.children.forEach(function(child){ // loop through all bookmarks
         if(child.title == title){ // if the item title matches the title of the folder we're looking for ("Music"), proceed
             collectBookmarks(child); // loop through all the bookmarks in the folder that we found
@@ -53,11 +75,11 @@ function collectBookmarks(folder){
                 if(videoID != null) bookmarkIds.push(videoID); // find the video ID of the video and add it to the bookmarks ID array
             }
         } else{ // it's a folder
-            collectBookmarks(child)
+            collectBookmarks(child);
         }
     })
 
-    backgroundPage.console.info("INFO (Playlist Generator): Folder: " + folder.title + " contains " + folder.children.length + " songs");
+    folderNamesLengths[folder.title] = folder.children.length;
 }
 
 // takes a Youtube url and returns the video ID (e.g. transforms "https://www.youtube.com/watch?v=XTNPtzq9lxA&feature=youtu.be&t=2" to "XTNPtzq9lxA")
@@ -67,19 +89,18 @@ function findVideoID(url){
     return urlParams.has('v') ? urlParams.get('v') : null
 }
 
-// take the input of the folders from the HTML form and parse every folder name, which is separated by a comma.
+// take the input of the folders from the HTML form and parse every folder name, which is separated by a comma
+// return a list
 function parseFolders(names){
     folderNames = names.split(","); // transform "Music, Music 2, Music 3" to ["Music", " Music 2", " Music 3"]
     folderNames = folderNames.map(folderName => folderName.trim()); // trim leading/trailing whitespace i.e. transform ["Music", " Music 2", " Music 3"] to ["Music", "Music 2", "Music 3"]
     folderNames = folderNames.filter(folderName => folderName.length > 0); // if the user inputs "" into the foldersForm input element, then folderNames will be [""], so just remove any empty strings to get an empty list
-    backgroundPage.console.log("Folder names: " + folderNames.toString());
     return folderNames;
 }
 
 function getRecentPlaylists(){
     chrome.storage.sync.get(['recentPlaylists'],
         function(returnDict){
-            console.info("INFO (Playlist Generator): Grabbed recent playlists return dictionary: " + returnDict);
             if(returnDict !== undefined && "recentPlaylists" in returnDict && returnDict.recentPlaylists instanceof Array && returnDict.recentPlaylists.length == 2){ // recentPlaylists exists, it's an array, and it has two elements
                 // check that both elements are Arrays
                 if(returnDict.recentPlaylists[0] instanceof Array) recentPlaylists = returnDict.recentPlaylists[0];
@@ -93,7 +114,9 @@ function getRecentPlaylists(){
 
             // make modifications to the popup UI
             var recentPlaylistsList = window.document.getElementById("recentPlaylistsList");
-            for(var i = 0; i < recentPlaylists.length; i++){ // add a button for at most the 5 most recent playlists
+            // add a button for at most the 5 most recent playlists
+            // the 5 most recent playlists are managed in updateRecentPlaylists(...)
+            for(var i = 0; i < recentPlaylists.length; i++){
                 var recentsListItem = document.createElement("div");
                 recentsListItem.setAttribute("class", "recentsListItem");
                 recentsListItem.setAttribute("id", "recents" + i)
@@ -167,7 +190,7 @@ function deletePlaylist(event){
     // finally, remove the HTML element itself on the popup UI
     event.target.parentNode.parentNode.remove(); // take delete button, get recentListItemButtonsDiv, then get recentListItem div, and remove that
 
-    // if we've removed all recent playlists, make sure we add some "No recent playlists! text"
+    // if we've removed all recent playlists, make sure we add some "No recent playlists!" text
     if(recentPlaylists === undefined || recentPlaylists.length == 0){
         displayNoRecentPlaylistText();
     }

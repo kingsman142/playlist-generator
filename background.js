@@ -2,6 +2,21 @@
 James Hahn, 2016
 */
 
+chrome.runtime.onMessage.addListener((message) => {
+    console.log("Background Message keys: " + Object.keys(message));
+    shuffle = message["shuffle"];
+    bookmarkIds = message["bookmarkIds"];
+    folderNamesList = message["folderNamesList"];
+    folderNamesLengths = message["folderNamesLengths"];
+
+    console.info("Folder names: " + folderNamesList.toString());
+    for(var folderName in folderNamesLengths){
+      console.info("INFO (Playlist Generator): Folder \"" + folderName + "\" contains " + folderNamesLengths[folderName] + " links");
+    }
+    console.info("INFO (Playlist Generator): Total # of songs is " + bookmarkIds.length);
+    startPlaylist();
+});
+
 const TIMEOUT_LENGTH = 2000; // wait at least TIMEOUT_LENGTH milliseconds before navigating to a new URL
 const WINDOW_WIDTH = 485;
 const WINDOW_HEIGHT = 475;
@@ -38,31 +53,40 @@ function startPlaylist(){
                 width: WINDOW_WIDTH,
                 height: WINDOW_HEIGHT,
             }, function(window){
-              chrome.tabs.query({
-                  windowId: window.id
-              }, function(tabs){
-                setTimeout(function() {
-                  recursePlaylistLoop(tabs[0].id); // pass in the ID of the Google Chrome tab created by this window
-              }, TIMEOUT_LENGTH)
-              })
+                chrome.tabs.query({
+                    windowId: window.id
+                }, function(tabs){
+                    setTimeout(function() {
+                        recursePlaylistLoop(tabs[0].id); // pass in the ID of the Google Chrome tab created by this window
+                }, TIMEOUT_LENGTH)
+                })
             })
         }
     )
 }
 
+function getVideoPlayerTimes(){
+    var currentTime = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuenow');
+    var endTime = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuemax');
+    var unavailable = document.getElementById('reason') instanceof Object;
+    return [currentTime, endTime, unavailable];
+}
+
 function recursePlaylistLoop(tabId){
-    chrome.tabs.executeScript(tabId, {
-        code:  `var currentTime = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuenow');
-                var endTime = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuemax');
-                var unavailable = document.getElementById('reason') instanceof Object;
-                [currentTime, endTime, unavailable]`
-    },  function(results){
+    chrome.scripting.executeScript({
+        target: { tabId: tabId },
+        func: getVideoPlayerTimes,
+        args: [],
+    }, function(results){
             if(chrome.runtime.lastError) return;
 
             try{
-                currentTime = results[0][0]; // current time in the player
-                endTime = results[0][1]; // end time of the player
-                unavailable = results[0][2]; // check if the player has any HTML reasons with "reasons" why a video is unavailable
+                // e.g. [{"frameId":0,"result":["1","229",false]}]
+                results = results[0]["result"]
+
+                currentTime = parseInt(results[0]); // current time in the player
+                endTime = parseInt(results[1]); // end time of the player
+                unavailable = results[2]; // check if the player has any HTML reasons with "reasons" why a video is unavailable
 
                 if((currentTime == endTime && endTime != 0) || unavailable == true){ // marks the end of the song OR the video is unavailable
                     if(unavailable == true){
