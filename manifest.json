@@ -4,7 +4,7 @@
   "name": "Playlist generator",
   "short_name": "Playlist gen.",
   "description": "Turns your unused, youtube bookmarks that are laying around into a playlist loop for hours of entertainment!",
-  "version": "3.0",
+  "version": "3.0.5",
 
   "content_security_policy": {
       "extension_pages": "script-src 'self'; object-src 'self'"
@@ -22,7 +22,8 @@
       "activeTab",
       "bookmarks",
       "storage",
-      "scripting"
+      "scripting",
+      "tabs"
   ],
   "host_permissions": [
       "https://www.youtube.com/*"

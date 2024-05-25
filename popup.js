@@ -38,10 +38,11 @@ function getBookmarkIds(shuffle = true){
 
         // must move the main functionality of the program to background.js so the program does not stop after the popup is closed
         chrome.runtime.sendMessage({
-          "shuffle": shuffle,
-          "bookmarkIds": bookmarkIds,
-          "folderNamesList": folderNamesList,
-          "folderNamesLengths": folderNamesLengths
+            "operation": "startPlaylist",
+            "shuffle": shuffle,
+            "bookmarkIds": bookmarkIds,
+            "folderNamesList": folderNamesList,
+            "folderNamesLengths": folderNamesLengths
         });
         resetVariables();
 

@@ -3,21 +3,27 @@ James Hahn, 2016
 */
 
 chrome.runtime.onMessage.addListener((message) => {
-    console.log("Background Message keys: " + Object.keys(message));
-    shuffle = message["shuffle"];
-    bookmarkIds = message["bookmarkIds"];
-    folderNamesList = message["folderNamesList"];
-    folderNamesLengths = message["folderNamesLengths"];
+    operation = message["operation"];
+    console.warn("Background Message 5 - operation: " + operation + ", keys: " + Object.keys(message));
 
-    console.info("Folder names: " + folderNamesList.toString());
-    for(var folderName in folderNamesLengths){
-      console.info("INFO (Playlist Generator): Folder \"" + folderName + "\" contains " + folderNamesLengths[folderName] + " links");
+    switch(operation){
+        case 'startPlaylist':
+            startPlaylist(message);
+            break;
+        case 'navigateToNewSong':
+            tabId = message['tabId']
+            console.warn("Background Message - reason: " + message['reason'])
+
+            navigateToNewSong(tabId);
+            break;
+        default:
+            console.warn("Unrecognized operation. Aborting.");
+            break;
     }
-    console.info("INFO (Playlist Generator): Total # of songs is " + bookmarkIds.length);
-    startPlaylist();
 });
 
-const TIMEOUT_LENGTH = 2000; // wait at least TIMEOUT_LENGTH milliseconds before navigating to a new URL
+const GET_AVAILABILITY_WAIT_LENGTH = 8000; // wait this many milliseconds before checking if the song has an unavailability error; NEVER REMOVE because we need to wait for the DOM to load
+const NAVIGATION_WAIT_LENGTH = 2000; // wait at least NAVIGATION_WAIT_LENGTH milliseconds before navigating to a new URL; NEVER REMOVE
 const WINDOW_WIDTH = 485;
 const WINDOW_HEIGHT = 475;
 
@@ -25,19 +31,34 @@ const WINDOW_HEIGHT = 475;
 var bookmarkIds = []; // YouTube video IDs of each bookmark
 var availableSongs = []; // list of songs currently available in the queue; play every song once, then refill the queue
 var bannedSongs = new Set();
-var currentVideoId = null; // video ID of the video currently playing in the window
 
 var shuffle = true; // default value -- should we iterate through the songs randomly or in-order?
-var currSongIndex = 0;
 
-var currentTime = 0; // current number of seconds we have played in the video
-var endTime = 0; // total number of seconds there are in the video
+function saveData(tabId){
+    chrome.storage.local.set({
+        "tabId": tabId,
+        "bookmarkIds": bookmarkIds,
+        "availableSongs": availableSongs,
+        "shuffle": shuffle
+    });
+}
 
 // main function to run the program
-function startPlaylist(){
+function startPlaylist(message){
+    shuffle = message["shuffle"];
+    bookmarkIds = message["bookmarkIds"];
+    folderNamesList = message["folderNamesList"];
+    folderNamesLengths = message["folderNamesLengths"];
+
+    console.info("Folder names: " + folderNamesList.toString());
+    for(var folderName in folderNamesLengths){
+        console.info("INFO (Playlist Generator): Folder \"" + folderName + "\" contains " + folderNamesLengths[folderName] + " links");
+    }
+    console.info("INFO (Playlist Generator): Total # of songs is " + bookmarkIds.length);
+
     availableSongs = []; // reset availableSongs list because opening and closing the extension does not empty it; only reloading the extension empties availableSongs
 
-    chrome.storage.sync.get(['bannedSongs'],
+    chrome.storage.local.get(['bannedSongs'],
         function(returnDict){
             console.info("INFO (Playlist Generator): Grabbed banned songs list:");
             if(returnDict !== undefined && "bannedSongs" in returnDict){
@@ -46,88 +67,140 @@ function startPlaylist(){
             console.log(bannedSongs);
             console.log(" ");
 
-            currentVideoId = getNextSongId()
+            var nextSongId = getNextSongId(); // video ID of the video currently playing in the window
             chrome.windows.create({
-                url: "https://www.youtube.com/watch?v=" + currentVideoId,
-                type: 'popup',
-                width: WINDOW_WIDTH,
-                height: WINDOW_HEIGHT,
-            }, function(window){
-                chrome.tabs.query({
-                    windowId: window.id
-                }, function(tabs){
-                    setTimeout(function() {
-                        recursePlaylistLoop(tabs[0].id); // pass in the ID of the Google Chrome tab created by this window
-                }, TIMEOUT_LENGTH)
-                })
-            })
-        }
-    )
-}
-
-function getVideoPlayerTimes(){
-    var currentTime = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuenow');
-    var endTime = document.getElementsByClassName('ytp-progress-bar')[0].getAttribute('aria-valuemax');
-    var unavailable = document.getElementById('reason') instanceof Object;
-    return [currentTime, endTime, unavailable];
-}
-
-function recursePlaylistLoop(tabId){
-    chrome.scripting.executeScript({
-        target: { tabId: tabId },
-        func: getVideoPlayerTimes,
-        args: [],
-    }, function(results){
-            if(chrome.runtime.lastError) return;
-
-            try{
-                // e.g. [{"frameId":0,"result":["1","229",false]}]
-                results = results[0]["result"]
-
-                currentTime = parseInt(results[0]); // current time in the player
-                endTime = parseInt(results[1]); // end time of the player
-                unavailable = results[2]; // check if the player has any HTML reasons with "reasons" why a video is unavailable
-
-                if((currentTime == endTime && endTime != 0) || unavailable == true){ // marks the end of the song OR the video is unavailable
-                    if(unavailable == true){
-                        bannedSongs.add(currentVideoId);
-                        console.warn("WARN (Playlist Generator): Banning song " + currentVideoId)
-                        console.log(bannedSongs)
-                        console.log(" ")
-                        chrome.storage.sync.set({"bannedSongs": Array.from(bannedSongs)}, function(){ console.log("Updated banned songs list"); })
-                    }
-
-                    return navigateToNewSong(tabId);
-                } else{ // just call this function recursively so we can update the current time variable
-                    setTimeout(function(){
-                        return recursePlaylistLoop(tabId);
-                    }, TIMEOUT_LENGTH);
-                }
-            } catch(e){ // an exception occurred
-                console.log(e);
-                return navigateToNewSong(tabId);
-            }
+                    url: "https://www.youtube.com/watch?v=" + nextSongId,
+                    type: 'popup',
+                    width: WINDOW_WIDTH,
+                    height: WINDOW_HEIGHT,
+                }, function(window){
+                    chrome.tabs.query({
+                            windowId: window.id
+                        }, function(tabs){
+                            // DO NOT REMOVE TIMEOUT - If this is removed, chrome.runtime errors will be thrown because the window
+                            // was not given enough time to load before querying it.
+                            setTimeout(function(){
+                                saveData(tabs[0].id);
+                                checkSongAvailability(tabs[0].id, nextSongId); // pass in the ID of the Google Chrome tab created by this window
+                            }, NAVIGATION_WAIT_LENGTH);
+                        }
+                    );
+            });
         }
     );
 }
 
-function navigateToNewSong(tabId){
-    // reset variables for next iteration
-    currentTime = 0;
-    endTime = 0;
-    currentVideoId = getNextSongId();
-    newURL = "https://www.youtube.com/watch?v=" + currentVideoId;
+function navigateToNewSong(tabId, grabVariablesFromStorage){
+    // grab all extension event data since service worker loses it when it goes inactive
+    chrome.storage.local.get(['bannedSongs', 'tabId', 'bookmarkIds', 'availableSongs', 'shuffle'],
+        function(returnDict){
+            if(returnDict == undefined) return;
 
-    // load the url of the next video
-    chrome.tabs.update(tabId, {
-        url: newURL
-    }, function(){
-        setTimeout(function(){ // navigate to the new song
-            currentTime = 0;
-            endTime = 0;
-            return recursePlaylistLoop(tabId);
-        }, TIMEOUT_LENGTH); // wait at least TIMEOUT_LENGTH milliseconds before executing this code because we don't want to just refresh instantly
+            if("bannedSongs" in returnDict) bannedSongs = new Set(returnDict.bannedSongs);
+            if("tabId" in returnDict) tabId = returnDict.tabId;
+            if("bookmarkIds" in returnDict) bookmarkIds = returnDict.bookmarkIds;
+            if("availableSongs" in returnDict) availableSongs = returnDict.availableSongs;
+            if("shuffle" in returnDict) shuffle = returnDict.shuffle;
+
+            // reset variables for next iteration
+            var nextSongId = getNextSongId();
+            var newURL = "https://www.youtube.com/watch?v=" + nextSongId;
+            saveData(tabId);
+
+            // load the url of the next video
+            chrome.tabs.update(tabId, {
+                url: newURL
+            }, function(){
+                // DO NOT REMOVE TIMEOUT - If this is removed, chrome.runtime errors will be thrown because the window
+                // was not given enough time to load before querying it.
+                setTimeout(function(){
+                    checkSongAvailability(tabId, nextSongId);
+                }, NAVIGATION_WAIT_LENGTH);
+            });
+        }
+    );
+}
+
+function checkSongAvailability(tabId, currSongId){
+    // This `executeScript` block didn't used to exist here.
+    // However, there's an issue where unavailable videos need ~6 seconds for errors to be populated in the DOM for us to extract.
+    // But, this forces us to also wait ~6 seconds to add the event listener, for available videos, navigating the page to the next song when it ends.
+    // In order to get around this, we optimistically add the event listener if the video is available (available songs) immediately
+    //  and make a 2nd attempt after 6 seconds for unavailable songs. This creates a duplication in processing but resolves
+    //  poor customer experience and achieves the best of both worlds.
+    chrome.scripting.executeScript({
+        target: { tabId: tabId },
+        func: setupVideoPlayerData,
+        args: [tabId],
     });
+
+    setTimeout(function(){
+        chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            func: setupVideoPlayerData,
+            args: [tabId],
+        }, function(results){
+                if(chrome.runtime.lastError){
+                    console.log("chrome.runtime.lastError");
+                    console.log(chrome.runtime.lastError);
+                    console.log("Aborting...");
+                    return;
+                }
+
+                try{
+                    // e.g. [{"frameId":0,"result":["1","229",false]}] or [{"frameId":0,"result":[false]}]
+                    results = results[0]["result"];
+                    unavailable = results[0]; // check if the player has any HTML reasons with "reasons" why a video is unavailable
+                    console.log("Unavailable: " + unavailable);
+
+                    if(unavailable){ // video is unavailable so ban/skip the song
+                        bannedSongs.add(currSongId);
+                        console.warn("(Playlist Generator): Banning song " + currSongId)
+                        console.warn(bannedSongs)
+                        chrome.storage.local.set({
+                            "bannedSongs": Array.from(bannedSongs)
+                        }, function(){
+                            console.warn("Updated banned songs list");
+                            setTimeout(function(){
+                                navigateToNewSong(tabId);
+                            }, NAVIGATION_WAIT_LENGTH);
+                        });
+                    }
+                } catch(e){ // an exception occurred
+                    setTimeout(function(){
+                        console.log(e);
+                        chrome.runtime.sendMessage({
+                            'operation': 'navigateToNewSong',
+                            'tabId': tabId,
+                            'reason': 'songException'
+                        });
+                    }, NAVIGATION_WAIT_LENGTH);
+                }
+            }
+        );
+    }, GET_AVAILABILITY_WAIT_LENGTH);
+}
+
+function setupVideoPlayerData(tabId){
+    var unavailable = document.getElementById('reason') instanceof Object;
+    // let the extension know when a video is finished playing, rather than polling every second
+    // this saves computational resources
+    const video = document.querySelector('video');
+    video.addEventListener('ended', function(){
+        chrome.runtime.sendMessage({
+            'operation': 'navigateToNewSong',
+            'tabId': tabId,
+            'reason': 'songEnded'
+        });
+    });
+    video.addEventListener('error', function(){
+        chrome.runtime.sendMessage({
+            'operation': 'navigateToNewSong',
+            'tabId': tabId,
+            'reason': 'songEnded'
+        });
+    });
+    return [unavailable];
 }
 
 function getNextSongId(){
@@ -138,7 +211,7 @@ function getNextSongId(){
 
     var newSongIndex = availableSongs[0];
     availableSongs.splice(0, 1);
-    console.info("INFO (Playlist Generator): Chose song at index: " + newSongIndex + ", ID: " + bookmarkIds[newSongIndex] + ", available songs: " + availableSongs.length);
+    console.warn("(Playlist Generator): Chose song at index: " + newSongIndex + ", ID: " + bookmarkIds[newSongIndex] + ", available songs: " + availableSongs.length);
     return bookmarkIds[newSongIndex];
 }
 
