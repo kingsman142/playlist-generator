@@ -72,7 +72,7 @@ function collectBookmarks(folder){
     folder.children.forEach(function(child){
         if(child.url){
             if(child.url.includes("youtube.com")){ // make sure this is a youtube link
-                var videoID = findVideoID(child.url); // find the video ID of the video and add it to the bookmarks ID array
+                var videoID = findVideoId(child.url); // find the video ID of the video and add it to the bookmarks ID array
                 if(videoID != null) bookmarkIds.push(videoID); // find the video ID of the video and add it to the bookmarks ID array
             }
         } else{ // it's a folder
@@ -81,13 +81,6 @@ function collectBookmarks(folder){
     })
 
     folderNamesLengths[folder.title] = folder.children.length;
-}
-
-// takes a Youtube url and returns the video ID (e.g. transforms "https://www.youtube.com/watch?v=XTNPtzq9lxA&feature=youtu.be&t=2" to "XTNPtzq9lxA")
-function findVideoID(url){
-    url = new URL(url);
-    var urlParams = new URLSearchParams(url.search);
-    return urlParams.has('v') ? urlParams.get('v') : null
 }
 
 // take the input of the folders from the HTML form and parse every folder name, which is separated by a comma

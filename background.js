@@ -4,7 +4,7 @@ James Hahn, 2016
 
 chrome.runtime.onMessage.addListener((message) => {
     operation = message["operation"];
-    console.warn("Background Message 5 - operation: " + operation + ", keys: " + Object.keys(message));
+    console.warn("Background Message - operation: " + operation + ", keys: " + Object.keys(message));
 
     switch(operation){
         case 'startPlaylist':
@@ -22,8 +22,8 @@ chrome.runtime.onMessage.addListener((message) => {
     }
 });
 
-const GET_AVAILABILITY_WAIT_LENGTH = 8000; // wait this many milliseconds before checking if the song has an unavailability error; NEVER REMOVE because we need to wait for the DOM to load
-const NAVIGATION_WAIT_LENGTH = 2000; // wait at least NAVIGATION_WAIT_LENGTH milliseconds before navigating to a new URL; NEVER REMOVE
+const GET_AVAILABILITY_WAIT_LENGTH = 7000; // wait this many milliseconds before checking if the song has an unavailability error; NEVER REMOVE because we need to wait for the DOM to load
+const NAVIGATION_WAIT_LENGTH = 5000; // wait at least NAVIGATION_WAIT_LENGTH milliseconds before navigating to a new URL; NEVER REMOVE
 const WINDOW_WIDTH = 485;
 const WINDOW_HEIGHT = 475;
 
@@ -121,24 +121,24 @@ function navigateToNewSong(tabId, grabVariablesFromStorage){
     );
 }
 
-function checkSongAvailability(tabId, currSongId){
+function checkSongAvailability(tabId, songId){
     // This `executeScript` block didn't used to exist here.
     // However, there's an issue where unavailable videos need ~6 seconds for errors to be populated in the DOM for us to extract.
-    // But, this forces us to also wait ~6 seconds to add the event listener, for available videos, navigating the page to the next song when it ends.
+    // But, this forces us to also wait ~7 seconds to add the event listener, for available videos, navigating the page to the next song when it ends.
     // In order to get around this, we optimistically add the event listener if the video is available (available songs) immediately
-    //  and make a 2nd attempt after 6 seconds for unavailable songs. This creates a duplication in processing but resolves
+    //  and make a 2nd attempt after 7 seconds for unavailable songs. This creates a duplication in processing but resolves
     //  poor customer experience and achieves the best of both worlds.
     chrome.scripting.executeScript({
         target: { tabId: tabId },
         func: setupVideoPlayerData,
-        args: [tabId],
+        args: [tabId, songId],
     });
 
     setTimeout(function(){
         chrome.scripting.executeScript({
             target: { tabId: tabId },
             func: setupVideoPlayerData,
-            args: [tabId],
+            args: [tabId, songId],
         }, function(results){
                 if(chrome.runtime.lastError){
                     console.log("chrome.runtime.lastError");
@@ -149,13 +149,13 @@ function checkSongAvailability(tabId, currSongId){
 
                 try{
                     // e.g. [{"frameId":0,"result":["1","229",false]}] or [{"frameId":0,"result":[false]}]
-                    results = results[0]["result"];
-                    unavailable = results[0]; // check if the player has any HTML reasons with "reasons" why a video is unavailable
+                    const scriptReturnValue = results[0]["result"];
+                    const unavailable = scriptReturnValue[0]; // check if the player has any HTML reasons with "reasons" why a video is unavailable
                     console.log("Unavailable: " + unavailable);
 
                     if(unavailable){ // video is unavailable so ban/skip the song
-                        bannedSongs.add(currSongId);
-                        console.warn("(Playlist Generator): Banning song " + currSongId)
+                        bannedSongs.add(songId);
+                        console.warn("(Playlist Generator): Banning song " + songId)
                         console.warn(bannedSongs)
                         chrome.storage.local.set({
                             "bannedSongs": Array.from(bannedSongs)
@@ -181,19 +181,22 @@ function checkSongAvailability(tabId, currSongId){
     }, GET_AVAILABILITY_WAIT_LENGTH);
 }
 
-function setupVideoPlayerData(tabId){
+async function setupVideoPlayerData(tabId, songId){
+    const currSongId = ( await chrome.storage.local.get(["currSongId"]) ).currSongId;
+    // If the user is skipping through songs within the 7s timeout period,
+    //  the timeout for the previous song will hit this code even if we've now switched to an available song.
+    // As such, the timeout ends for songId (time to check availability), but we're not currently on a different song,
+    //  consider that previous availability check invalid and return false so we don't skip the current song.
+    if (songId !== currSongId) {
+        return [false]; // we don't want to ban the wrong song; this one is available
+    }
+
+
     var unavailable = document.getElementById('reason') instanceof Object;
     // let the extension know when a video is finished playing, rather than polling every second
     // this saves computational resources
     const video = document.querySelector('video');
     video.addEventListener('ended', function(){
-        chrome.runtime.sendMessage({
-            'operation': 'navigateToNewSong',
-            'tabId': tabId,
-            'reason': 'songEnded'
-        });
-    });
-    video.addEventListener('error', function(){
         chrome.runtime.sendMessage({
             'operation': 'navigateToNewSong',
             'tabId': tabId,
@@ -211,8 +214,10 @@ function getNextSongId(){
 
     var newSongIndex = availableSongs[0];
     availableSongs.splice(0, 1);
-    console.warn("(Playlist Generator): Chose song at index: " + newSongIndex + ", ID: " + bookmarkIds[newSongIndex] + ", available songs: " + availableSongs.length);
-    return bookmarkIds[newSongIndex];
+    const newSongId = bookmarkIds[newSongIndex];
+    console.warn("(Playlist Generator): Chose song at index: " + newSongIndex + ", ID: " + newSongId + ", available songs: " + availableSongs.length);
+    chrome.storage.local.set({ "currSongId": newSongId });
+    return newSongId;
 }
 
 function removeBannedSongs(){
