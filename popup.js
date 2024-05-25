@@ -103,7 +103,7 @@ function getRecentPlaylists(){
                 console.log(recentPlaylistsSizes);
                 console.log(" ");
             } else{
-                console.error("ERROR (Playlist Generator): Invalid returnDict.recentPlaylists; resetting both to their default value of empty lists []")
+                console.warn("ERROR (Playlist Generator): Invalid returnDict.recentPlaylists; resetting both to their default value of empty lists []")
             }
 
             // make modifications to the popup UI
