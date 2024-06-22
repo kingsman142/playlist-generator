@@ -19,7 +19,8 @@ function getBookmarkIds(shuffle = true){
         //   -> [Bookmarks bar, Other bookmarks] (children)
         //   -> Bookmarks bar (0th element)
         //   -> [x1, x2, x3, ..., xN] (the children a.k.a. all items on bookmarks bar)
-        bookmarks = bookmarks[0]["children"][0]["children"];
+        // Old: bookmarks[0]["children"][0]["children"]; new method loops over Bookmarks Bar as well as Other Bookmarks
+        bookmarks = bookmarks[0]["children"];
 
         var folderNamesString = window.document.getElementById("foldersForm").value;
         folderNamesList = parseFolders(folderNamesString);
